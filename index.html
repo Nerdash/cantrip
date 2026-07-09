@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Suivi de Personnage</title>
+<meta name="theme-color" content="#171209">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-card: #2b2119;
+    --border-card: rgba(196,164,108,0.2);
+    --text-main: #efe4cf;
+    --text-gold: #f0d9a8;
+    --text-label: #b8a988;
+    --text-muted: #a08d64;
+    --text-dim: #6b5a3b;
+    --border-strong: #4a3c28;
+    --bg-deep: #171209;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #171209;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  body {
+    font-family: -apple-system, 'SF Pro', system-ui, sans-serif;
+    color: var(--text-main);
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(160deg, #211a12 0%, #171209 100%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 2px, transparent 2px, transparent 7px);
+    box-sizing: border-box;
+    padding: max(20px, env(safe-area-inset-top) + 14px) max(18px, env(safe-area-inset-right) + 4px) max(16px, env(safe-area-inset-bottom) + 12px) max(18px, env(safe-area-inset-left) + 4px);
+    display: flex;
+    flex-direction: column;
+  }
+  .font-cinzel { font-family: 'Cinzel', serif; }
+  input::placeholder { color: #6b5a3d; }
+  .hscroll { scrollbar-width: none; -ms-overflow-style: none; }
+  .hscroll::-webkit-scrollbar { display: none; }
+  .badge { flex: none; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; user-select: none; }
+  .badge-used { background: transparent; border: 1px solid var(--border-strong); color: #6b5a3b; font-weight: 600; }
+  .badge-available { background: rgba(239,68,68,0.16); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; font-weight: 700; }
+  .toggle-track { width: 40px; height: 24px; border-radius: 12px; position: relative; cursor: pointer; flex: none; transition: background 150ms; }
+  .toggle-knob { width: 18px; height: 18px; border-radius: 9px; background: var(--text-main); position: absolute; top: 3px; transition: left 150ms; }
+  .icon-btn { width: 44px; height: 44px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border-card); display: flex; align-items: center; justify-content: center; color: var(--text-label); cursor: pointer; flex: none; }
+  input:disabled { opacity: 0.45; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'jdr_character_tracker_state';
+
+  function makeSpellLevels() {
+    var levels = [];
+    for (var i = 1; i <= 9; i++) {
+      levels.push({ level: i, enabled: false, max: 0, used: [] });
+    }
+    return levels;
+  }
+
+  function defaultProfile() {
+    return {
+      characterName: 'Mon Personnage',
+      hp: { current: 10, max: 10, temp: 0 },
+      spellLevels: makeSpellLevels(),
+      classResource: { enabled: false, label: 'Ressource de Classe', max: 0, used: [] }
+    };
+  }
+
+  function defaultState() {
+    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()] };
+  }
+
+  // ---- persistence ----
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
+      return parsed;
+    } catch (e) {
+      return defaultState();
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { /* localStorage unavailable or full: state stays in memory only */ }
+  }
+
+  var state = loadState();
+
+  // ---- ephemeral UI state (not persisted) ----
+  var ui = {
+    view: 'main', // 'main' | 'settings'
+    editingMax: false,
+    editingTemp: false,
+    shortRestOpen: false,
+    shortRestChecks: { hp: false, spells: false, tempHp: false, classResource: false },
+    importError: ''
+  };
+
+  function profile() { return state.profiles[state.activeProfileIndex]; }
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function toInt(v, fallback) {
+    var n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
+    return isNaN(n) ? fallback : n;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function resizeUsedArray(arr, max) {
+    var out = [];
+    for (var i = 0; i < max; i++) out.push(!!(arr && arr[i]));
+    return out;
+  }
+
+  // ---- SVG icons ----
+  var ICON_GEAR = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.05A1.65 1.65 0 0011 4.09V4a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.05c.14.6.62 1.05 1.22 1.19h.09a2 2 0 010 4h-.09c-.6.14-1.08.59-1.22 1.19z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_BACK = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#171209" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // ---- render ----
+  var app = document.getElementById('app');
+
+  function render() {
+    document.title = 'Suivi — ' + (profile().characterName || 'Personnage');
+    if (ui.view === 'settings') {
+      app.innerHTML = renderSettings();
+    } else {
+      app.innerHTML = renderMain();
+    }
+    if (ui.shortRestOpen) {
+      app.insertAdjacentHTML('beforeend', renderShortRestModal());
+    }
+    bindEvents();
+  }
+
+  function renderMain() {
+    var p = profile();
+    var hp = p.hp;
+
+    var maxHtml = ui.editingMax
+      ? '<input id="hpMaxInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.max + '" style="width:60px;font-size:19px;color:#efe4cf;background:transparent;border:none;border-bottom:1px solid #ef4444;outline:none;padding:0"/>'
+      : '<div id="hpMaxDisplay" style="font-size:19px;color:#a08d64;cursor:pointer;border-bottom:1px dashed #4a3c28">' + hp.max + '</div>';
+
+    var tempHtml;
+    if (ui.editingTemp) {
+      tempHtml = '<div style="display:flex;align-items:baseline;gap:2px;margin-left:8px">' +
+        '<div style="font-size:19px;font-weight:700;color:#7dd3fc">+</div>' +
+        '<input id="tempInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.temp + '" style="width:44px;font-size:19px;font-weight:700;color:#7dd3fc;background:transparent;border:none;border-bottom:1px solid #7dd3fc;outline:none;padding:0"/></div>';
+    } else {
+      tempHtml = '<div id="tempDisplay" style="font-size:19px;font-weight:700;color:#7dd3fc;cursor:pointer;border-bottom:1px dashed rgba(125,211,252,0.5);margin-left:8px">+' + hp.temp + '</div>';
+    }
+
+    var spellGroupsHtml = p.spellLevels
+      .filter(function (l) { return l.enabled && l.max > 0; })
+      .map(function (l) {
+        var badges = l.used.map(function (used, i) {
+          return '<div class="badge ' + (used ? 'badge-used' : 'badge-available') + '" data-action="toggle-spell" data-level="' + l.level + '" data-index="' + i + '">' + l.level + '</div>';
+        }).join('');
+        return '<div style="display:flex;flex-direction:column;gap:4px">' +
+          '<div style="font-size:11px;color:#a08d64;font-weight:600">Niveau ' + l.level + '</div>' +
+          '<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + badges + '</div>' +
+          '</div>';
+      }).join('');
+
+    var classHtml = '';
+    if (p.classResource.enabled) {
+      var cbadges = p.classResource.used.map(function (used, i) {
+        return '<div class="badge ' + (used ? 'badge-used' : 'badge-available') + '" data-action="toggle-class" data-index="' + i + '">' + (i + 1) + '</div>';
+      }).join('');
+      classHtml = '<div style="display:flex;flex-direction:column;gap:6px">' +
+        '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">' + escapeHtml(p.classResource.label || 'Ressource') + '</div>' +
+        '<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + cbadges + '</div>' +
+        '</div>';
+    }
+
+    return (
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between">' +
+          '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + escapeHtml(p.characterName) + '</div>' +
+          '<div class="icon-btn" data-action="open-settings">' + ICON_GEAR + '</div>' +
+        '</div>' +
+
+        '<div style="background:#2b2119;border:1px solid rgba(196,164,108,0.2);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">' +
+          '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Points de vie</div>' +
+          '<div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap">' +
+            '<div style="font-size:42px;font-weight:800;line-height:1">' + hp.current + '</div>' +
+            '<div style="font-size:19px;color:#a08d64">/</div>' +
+            maxHtml +
+            tempHtml +
+          '</div>' +
+          '<div style="display:flex;gap:8px;align-items:center;justify-content:center">' +
+            '<div data-action="damage" style="width:52px;height:44px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
+            '<div data-action="heal" style="width:52px;height:44px;border-radius:6px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.45);color:#22c55e;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">+</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px">' +
+          '<div style="display:flex;flex-direction:column;gap:8px">' +
+            '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
+            (spellGroupsHtml || '<div style="font-size:12px;color:#6b5a3b">Aucun niveau actif — configurez-les dans les paramètres.</div>') +
+          '</div>' +
+          classHtml +
+        '</div>' +
+
+        '<div data-action="open-rest" style="flex:none;height:52px;border-radius:6px;background:#4a3c28;border:1px solid rgba(196,164,108,0.34);color:#efe4cf;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;letter-spacing:0.03em" class="font-cinzel">Repos</div>' +
+      '</div>'
+    );
+  }
+
+  function toggleTrackStyle(enabled) {
+    return 'background:' + (enabled ? '#ef4444' : '#4a3c28') + ';';
+  }
+  function toggleKnobStyle(enabled) {
+    return 'left:' + (enabled ? '19px' : '3px') + ';';
+  }
+
+  function renderSettings() {
+    var p = profile();
+
+    var levelRows = p.spellLevels.map(function (l) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#2b2119;border-bottom:1px solid rgba(196,164,108,0.14)">' +
+        '<div style="width:56px;font-size:13px;font-weight:600;color:#efe4cf">Niv. ' + l.level + '</div>' +
+        '<div class="toggle-track" style="' + toggleTrackStyle(l.enabled) + '" data-action="toggle-level" data-level="' + l.level + '"><div class="toggle-knob" style="' + toggleKnobStyle(l.enabled) + '"></div></div>' +
+        '<div style="flex:1"></div>' +
+        '<label style="font-size:11px;color:#a08d64">Max</label>' +
+        '<input type="text" inputmode="numeric" pattern="[0-9]*" value="' + l.max + '" ' + (l.enabled ? '' : 'disabled') + ' data-action="level-max" data-level="' + l.level + '" style="width:42px;height:34px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+        '</div>';
+    }).join('');
+
+    return (
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
+        '<div style="display:flex;align-items:center;gap:12px;flex:none">' +
+          '<div class="icon-btn" data-action="back-to-main">' + ICON_BACK + '</div>' +
+          '<div style="font-size:19px;font-weight:700;color:#f0d9a8" class="font-cinzel">Paramètres</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Nom du personnage</label>' +
+          '<input type="text" id="nameInput" value="' + escapeHtml(p.characterName) + '" style="height:44px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);border-radius:10px;color:#efe4cf;font-size:15px;padding:0 12px;box-sizing:border-box"/>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Emplacements de sorts</label>' +
+          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(196,164,108,0.2)">' + levelRows + '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Ressource de classe</label>' +
+          '<div style="display:flex;flex-direction:column;gap:10px;padding:12px;background:#2b2119;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between">' +
+              '<div style="font-size:13px;font-weight:600">Activer</div>' +
+              '<div class="toggle-track" style="' + toggleTrackStyle(p.classResource.enabled) + '" data-action="toggle-class-enabled"><div class="toggle-knob" style="' + toggleKnobStyle(p.classResource.enabled) + '"></div></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:10px">' +
+              '<input type="text" id="classLabelInput" value="' + escapeHtml(p.classResource.label) + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' placeholder="Libellé (ex. Ki)" style="flex:1;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;padding:0 10px;box-sizing:border-box"/>' +
+              '<input type="text" inputmode="numeric" pattern="[0-9]*" id="classMaxInput" value="' + p.classResource.max + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' style="width:52px;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;gap:10px;margin-top:2px;flex:none">' +
+          '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);color:#efe4cf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
+          '<label style="flex:1;height:46px;border-radius:6px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);color:#efe4cf;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
+            'Importer (JSON)' +
+            '<input type="file" accept="application/json" id="importInput" style="display:none"/>' +
+          '</label>' +
+        '</div>' +
+        (ui.importError ? '<div style="flex:none;font-size:12px;color:#ef4444;text-align:center">' + escapeHtml(ui.importError) + '</div>' : '') +
+      '</div>'
+    );
+  }
+
+  function renderShortRestModal() {
+    var p = profile();
+    var checks = ui.shortRestChecks;
+    var rows = [
+      { key: 'hp', label: 'Total de PV' },
+      { key: 'spells', label: 'Emplacements de sorts' },
+      { key: 'tempHp', label: 'PV temporaires' },
+      { key: 'classResource', label: p.classResource.label || 'Ressource de classe' }
+    ];
+    var rowsHtml = rows.map(function (r) {
+      var checked = !!checks[r.key];
+      return '<div data-action="toggle-rest-check" data-key="' + r.key + '" style="display:flex;align-items:center;gap:10px;height:40px;cursor:pointer">' +
+        '<div style="width:22px;height:22px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:' + (checked ? '#efe4cf' : 'transparent') + ';border:1px solid ' + (checked ? '#efe4cf' : 'rgba(255,255,255,0.25)') + '">' + (checked ? ICON_CHECK : '') + '</div>' +
+        '<div style="font-size:13px">' + escapeHtml(r.label) + '</div>' +
+        '</div>';
+    }).join('');
+
+    return '<div id="restOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;box-sizing:border-box">' +
+      '<div style="width:100%;max-width:300px;background:#2b2119;border:1px solid rgba(196,164,108,0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">' +
+        '<div style="font-size:17px;font-weight:700;color:#f0d9a8" class="font-cinzel">Repos</div>' +
+        rowsHtml +
+        '<div style="display:flex;gap:10px;margin-top:4px">' +
+          '<div data-action="cancel-rest" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(196,164,108,0.34);color:#b8a988;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
+          '<div data-action="confirm-rest" style="flex:1;height:44px;border-radius:6px;background:#efe4cf;border:none;color:#171209;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">Valider</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ---- event binding ----
+  function bindEvents() {
+    app.querySelectorAll('[data-action]').forEach(function (el) {
+      el.addEventListener('click', onAction);
+    });
+
+    var hpMaxInput = document.getElementById('hpMaxInput');
+    if (hpMaxInput) {
+      hpMaxInput.focus();
+      hpMaxInput.select();
+      hpMaxInput.addEventListener('blur', function () {
+        profile().hp.max = clamp(toInt(hpMaxInput.value, profile().hp.max), 0, 999);
+        profile().hp.current = clamp(profile().hp.current, 0, profile().hp.max);
+        ui.editingMax = false;
+        saveState();
+        render();
+      });
+      hpMaxInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') hpMaxInput.blur(); });
+    }
+
+    var tempInput = document.getElementById('tempInput');
+    if (tempInput) {
+      tempInput.focus();
+      tempInput.select();
+      tempInput.addEventListener('blur', function () {
+        profile().hp.temp = clamp(toInt(tempInput.value, profile().hp.temp), 0, 999);
+        ui.editingTemp = false;
+        saveState();
+        render();
+      });
+      tempInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') tempInput.blur(); });
+    }
+
+    var nameInput = document.getElementById('nameInput');
+    if (nameInput) {
+      nameInput.addEventListener('input', function () {
+        profile().characterName = nameInput.value;
+        saveState();
+      });
+    }
+
+    var classLabelInput = document.getElementById('classLabelInput');
+    if (classLabelInput) {
+      classLabelInput.addEventListener('input', function () {
+        profile().classResource.label = classLabelInput.value;
+        saveState();
+      });
+    }
+
+    var classMaxInput = document.getElementById('classMaxInput');
+    if (classMaxInput) {
+      classMaxInput.addEventListener('change', function () {
+        var cr = profile().classResource;
+        var max = clamp(toInt(classMaxInput.value, cr.max), 0, 20);
+        cr.max = max;
+        cr.used = resizeUsedArray(cr.used, max);
+        saveState();
+        render();
+      });
+    }
+
+    app.querySelectorAll('[data-action="level-max"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var level = parseInt(el.getAttribute('data-level'), 10);
+        var l = profile().spellLevels.find(function (x) { return x.level === level; });
+        var max = clamp(toInt(el.value, l.max), 0, 12);
+        l.max = max;
+        l.used = resizeUsedArray(l.used, max);
+        saveState();
+        render();
+      });
+    });
+
+    var importInput = document.getElementById('importInput');
+    if (importInput) {
+      importInput.addEventListener('change', onImportFile);
+    }
+  }
+
+  function onAction(e) {
+    var action = e.currentTarget.getAttribute('data-action');
+    switch (action) {
+      case 'open-settings': ui.view = 'settings'; render(); break;
+      case 'back-to-main': ui.view = 'main'; render(); break;
+
+      case 'damage': applyDamage(); break;
+      case 'heal': applyHeal(); break;
+
+      case 'toggle-spell': {
+        var level = parseInt(e.currentTarget.getAttribute('data-level'), 10);
+        var idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+        var l = profile().spellLevels.find(function (x) { return x.level === level; });
+        l.used[idx] = !l.used[idx];
+        saveState(); render();
+        break;
+      }
+      case 'toggle-class': {
+        var cidx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+        var cr = profile().classResource;
+        cr.used[cidx] = !cr.used[cidx];
+        saveState(); render();
+        break;
+      }
+
+      case 'toggle-level': {
+        var lvl = parseInt(e.currentTarget.getAttribute('data-level'), 10);
+        var sl = profile().spellLevels.find(function (x) { return x.level === lvl; });
+        sl.enabled = !sl.enabled;
+        saveState(); render();
+        break;
+      }
+      case 'toggle-class-enabled': {
+        profile().classResource.enabled = !profile().classResource.enabled;
+        saveState(); render();
+        break;
+      }
+
+      case 'open-rest':
+        ui.shortRestChecks = { hp: false, spells: false, tempHp: false, classResource: false };
+        ui.shortRestOpen = true;
+        render();
+        break;
+      case 'cancel-rest':
+        ui.shortRestOpen = false;
+        render();
+        break;
+      case 'toggle-rest-check': {
+        var key = e.currentTarget.getAttribute('data-key');
+        ui.shortRestChecks[key] = !ui.shortRestChecks[key];
+        render();
+        break;
+      }
+      case 'confirm-rest':
+        confirmRest();
+        break;
+
+      case 'export-json': exportJson(); break;
+
+      default: break;
+    }
+
+    if (action === 'hp-max-click') startEditMax();
+  }
+
+  // hp max / temp click-to-edit triggers via delegated ids (added after render since dynamic)
+  app.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'hpMaxDisplay') { ui.editingMax = true; render(); }
+    if (e.target && e.target.id === 'tempDisplay') { ui.editingTemp = true; render(); }
+  });
+
+  function startEditMax() { ui.editingMax = true; render(); }
+
+  function applyDamage() {
+    var hp = profile().hp;
+    if (hp.temp > 0) {
+      hp.temp -= 1;
+    } else {
+      hp.current = clamp(hp.current - 1, 0, hp.max);
+    }
+    saveState();
+    render();
+  }
+
+  function applyHeal() {
+    var hp = profile().hp;
+    hp.current = clamp(hp.current + 1, 0, hp.max);
+    saveState();
+    render();
+  }
+
+  function confirmRest() {
+    var p = profile();
+    var checks = ui.shortRestChecks;
+    if (checks.hp) p.hp.current = p.hp.max;
+    if (checks.tempHp) p.hp.temp = 0;
+    if (checks.spells) {
+      p.spellLevels.forEach(function (l) {
+        if (l.enabled) l.used = l.used.map(function () { return false; });
+      });
+    }
+    if (checks.classResource && p.classResource.enabled) {
+      p.classResource.used = p.classResource.used.map(function () { return false; });
+    }
+    ui.shortRestOpen = false;
+    saveState();
+    render();
+  }
+
+  function exportJson() {
+    var p = profile();
+    var today = new Date().toISOString().slice(0, 10);
+    var blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'jdr_save_' + today + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function isValidProfile(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (typeof data.characterName !== 'string') return false;
+    if (!data.hp || typeof data.hp.current !== 'number' || typeof data.hp.max !== 'number' || typeof data.hp.temp !== 'number') return false;
+    if (!Array.isArray(data.spellLevels) || data.spellLevels.length !== 9) return false;
+    for (var i = 0; i < data.spellLevels.length; i++) {
+      var l = data.spellLevels[i];
+      if (typeof l.level !== 'number' || typeof l.enabled !== 'boolean' || typeof l.max !== 'number' || !Array.isArray(l.used)) return false;
+    }
+    if (!data.classResource || typeof data.classResource.enabled !== 'boolean' || typeof data.classResource.max !== 'number' || !Array.isArray(data.classResource.used)) return false;
+    return true;
+  }
+
+  function onImportFile(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(String(reader.result));
+        if (!isValidProfile(data)) throw new Error('invalid');
+        state.profiles[state.activeProfileIndex] = data;
+        ui.importError = '';
+        saveState();
+        render();
+      } catch (err) {
+        ui.importError = 'Fichier invalide';
+        render();
+      }
+    };
+    reader.onerror = function () {
+      ui.importError = 'Fichier invalide';
+      render();
+    };
+    reader.readAsText(file);
+  }
+
+  render();
+
+  // ---- PWA service worker (best-effort, no-op if unsupported) ----
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* offline support unavailable, app still works online */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
