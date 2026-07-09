@@ -340,10 +340,10 @@
     }).join('');
 
     var skillsHtml = filteredSkills.length
-      ? filteredSkills.map(function (s) {
-          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#2b2119;border-bottom:1px solid rgba(196,164,108,0.14)">' +
-            '<div style="font-size:13px;color:#efe4cf">' + escapeHtml(s.name) + '</div>' +
-            '<div style="font-size:14px;font-weight:700;color:#f0d9a8">' + formatSigned(s.modifier) + '</div>' +
+      ? filteredSkills.map(function (s, i) {
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:' + (i % 2 ? '#241a10' : '#2b2119') + ';border-bottom:1px solid rgba(196,164,108,0.14)">' +
+            '<div style="font-size:15px;color:#efe4cf">' + escapeHtml(s.name) + '</div>' +
+            '<div style="font-size:16px;font-weight:700;color:#f0d9a8">' + formatSigned(s.modifier) + '</div>' +
             '</div>';
         }).join('')
       : '<div style="padding:16px;text-align:center;font-size:12px;color:#6b5a3b">Aucune compétence trouvée.</div>';
@@ -352,7 +352,7 @@
       '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Stats</div>' +
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none">' + abilitiesHtml + '</div>' +
-        '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:40px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;padding:0 12px;box-sizing:border-box"/>' +
+        '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:52px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);border-radius:10px;color:#efe4cf;font-size:16px;padding:0 16px;box-sizing:border-box"/>' +
         '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' + skillsHtml + '</div>' +
       '</div>'
     );
