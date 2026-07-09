@@ -668,6 +668,18 @@
       if (typeof l.level !== 'number' || typeof l.enabled !== 'boolean' || typeof l.max !== 'number' || !Array.isArray(l.used)) return false;
     }
     if (!data.classResource || typeof data.classResource.enabled !== 'boolean' || typeof data.classResource.max !== 'number' || !Array.isArray(data.classResource.used)) return false;
+    if (data.abilityScores !== undefined) {
+      if (typeof data.abilityScores !== 'object' || !data.abilityScores) return false;
+      for (var a = 0; a < ABILITY_KEYS.length; a++) {
+        if (typeof data.abilityScores[ABILITY_KEYS[a]] !== 'number') return false;
+      }
+    }
+    if (data.skills !== undefined) {
+      if (!Array.isArray(data.skills) || data.skills.length !== SKILL_NAMES.length) return false;
+      for (var s = 0; s < data.skills.length; s++) {
+        if (typeof data.skills[s].name !== 'string' || typeof data.skills[s].modifier !== 'number') return false;
+      }
+    }
     return true;
   }
 
