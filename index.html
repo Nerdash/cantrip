@@ -56,12 +56,17 @@
   .hscroll { scrollbar-width: none; -ms-overflow-style: none; }
   .hscroll::-webkit-scrollbar { display: none; }
   .badge { flex: none; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; user-select: none; }
-  .badge-used { background: transparent; border: 1px solid var(--border-strong); color: #6b5a3b; font-weight: 600; }
-  .badge-available { background: rgba(239,68,68,0.16); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; font-weight: 700; }
+  .badge-used { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5; font-weight: 600; }
+  .badge-available { background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.5); color: #86efac; font-weight: 700; }
   .toggle-track { width: 40px; height: 24px; border-radius: 12px; position: relative; cursor: pointer; flex: none; transition: background 150ms; }
   .toggle-knob { width: 18px; height: 18px; border-radius: 9px; background: var(--text-main); position: absolute; top: 3px; transition: left 150ms; }
   .icon-btn { width: 44px; height: 44px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border-card); display: flex; align-items: center; justify-content: center; color: var(--text-label); cursor: pointer; flex: none; }
   input:disabled { opacity: 0.45; }
+  @keyframes concentration-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0.55); }
+    50% { box-shadow: 0 0 0 9px rgba(167,139,250,0); }
+  }
+  .concentration-active { animation: concentration-pulse 1.7s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -80,13 +85,46 @@
     return levels;
   }
 
+  var ABILITY_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
+  var ABILITY_LABELS = { force: 'Force', dexterite: 'Dextérité', constitution: 'Constitution', intelligence: 'Intelligence', sagesse: 'Sagesse', charisme: 'Charisme' };
+  var SKILL_NAMES = ['Acrobaties', 'Arcanes', 'Athlétisme', 'Discrétion', 'Dressage', 'Escamotage', 'Histoire', 'Intimidation', 'Intuition', 'Investigation', 'Médecine', 'Nature', 'Perception', 'Persuasion', 'Religion', 'Représentation', 'Survie', 'Tromperie'];
+
+  function makeAbilityScores() {
+    var scores = {};
+    ABILITY_KEYS.forEach(function (k) { scores[k] = 0; });
+    return scores;
+  }
+
+  function makeSkills() {
+    return SKILL_NAMES.map(function (name) { return { name: name, modifier: 0 }; });
+  }
+
   function defaultProfile() {
     return {
       characterName: 'Mon Personnage',
       hp: { current: 10, max: 10, temp: 0 },
       spellLevels: makeSpellLevels(),
-      classResource: { enabled: false, label: 'Ressource de Classe', max: 0, used: [] }
+      classResource: { enabled: false, label: 'Ressource de Classe', max: 0, used: [] },
+      concentration: false,
+      abilityScores: makeAbilityScores(),
+      skills: makeSkills()
     };
+  }
+
+  function sanitizeProfile(p) {
+    if (!p.abilityScores || typeof p.abilityScores !== 'object') p.abilityScores = makeAbilityScores();
+    ABILITY_KEYS.forEach(function (k) {
+      if (typeof p.abilityScores[k] !== 'number' || isNaN(p.abilityScores[k])) p.abilityScores[k] = 0;
+    });
+    if (!Array.isArray(p.skills) || p.skills.length !== SKILL_NAMES.length) {
+      p.skills = makeSkills();
+    } else {
+      p.skills.forEach(function (s, i) {
+        if (typeof s.modifier !== 'number' || isNaN(s.modifier)) s.modifier = 0;
+        if (typeof s.name !== 'string') s.name = SKILL_NAMES[i];
+      });
+    }
+    return p;
   }
 
   function defaultState() {
@@ -100,6 +138,7 @@
       if (!raw) return defaultState();
       var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
+      parsed.profiles.forEach(sanitizeProfile);
       return parsed;
     } catch (e) {
       return defaultState();
@@ -131,6 +170,10 @@
     var n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
     return isNaN(n) ? fallback : n;
   }
+  function formatSigned(v) {
+    return (v >= 0 ? '+' : '') + v;
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -142,15 +185,18 @@
   }
 
   // ---- SVG icons ----
-  var ICON_GEAR = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.05A1.65 1.65 0 0011 4.09V4a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.05c.14.6.62 1.05 1.22 1.19h.09a2 2 0 010 4h-.09c-.6.14-1.08.59-1.22 1.19z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_GEAR = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
   var ICON_BACK = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var ICON_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#171209" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_CONCENTRATION = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg>';
 
   // ---- render ----
   var app = document.getElementById('app');
 
   function render() {
     document.title = 'Suivi — ' + (profile().characterName || 'Personnage');
+    var prevScroller = app.querySelector('[data-scroll-root]');
+    var scrollTop = prevScroller ? prevScroller.scrollTop : 0;
     if (ui.view === 'settings') {
       app.innerHTML = renderSettings();
     } else {
@@ -159,6 +205,8 @@
     if (ui.shortRestOpen) {
       app.insertAdjacentHTML('beforeend', renderShortRestModal());
     }
+    var nextScroller = app.querySelector('[data-scroll-root]');
+    if (nextScroller) nextScroller.scrollTop = scrollTop;
     bindEvents();
   }
 
@@ -209,23 +257,34 @@
           '<div class="icon-btn" data-action="open-settings">' + ICON_GEAR + '</div>' +
         '</div>' +
 
-        '<div style="background:#2b2119;border:1px solid rgba(196,164,108,0.2);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">' +
-          '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Points de vie</div>' +
-          '<div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap">' +
-            '<div style="font-size:42px;font-weight:800;line-height:1">' + hp.current + '</div>' +
-            '<div style="font-size:19px;color:#a08d64">/</div>' +
-            maxHtml +
-            tempHtml +
+        '<div style="background:#2b2119;border:1px solid rgba(196,164,108,0.2);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:16px">' +
+          '<div data-action="damage" style="flex:none;width:80px;height:76px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
+          '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center">' +
+            '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Points de vie</div>' +
+            '<div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap">' +
+              '<div style="font-size:42px;font-weight:800;line-height:1">' + hp.current + '</div>' +
+              '<div style="font-size:19px;color:#a08d64">/</div>' +
+              maxHtml +
+              tempHtml +
+            '</div>' +
+            (function () {
+              var currentPct = hp.max > 0 ? clamp(Math.round(hp.current / hp.max * 100), 0, 100) : 0;
+              var tempPct = hp.max > 0 ? clamp(Math.round(hp.temp / hp.max * 100), 0, currentPct) : 0;
+              return '<div style="width:100%;height:5px;border-radius:3px;background:rgba(239,68,68,0.35);overflow:hidden;position:relative">' +
+                '<div style="height:100%;width:' + currentPct + '%;background:#22c55e"></div>' +
+                (tempPct > 0 ? '<div style="position:absolute;top:0;right:' + (100 - currentPct) + '%;width:' + tempPct + '%;height:100%;background:#7dd3fc"></div>' : '') +
+              '</div>';
+            })() +
           '</div>' +
-          '<div style="display:flex;gap:8px;align-items:center;justify-content:center">' +
-            '<div data-action="damage" style="width:52px;height:44px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
-            '<div data-action="heal" style="width:52px;height:44px;border-radius:6px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.45);color:#22c55e;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">+</div>' +
-          '</div>' +
+          '<div data-action="heal" style="flex:none;width:80px;height:76px;border-radius:6px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.45);color:#22c55e;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">+</div>' +
         '</div>' +
 
-        '<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px">' +
+        '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px;margin-top:10px">' +
           '<div style="display:flex;flex-direction:column;gap:8px">' +
-            '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between">' +
+              '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
+              '<div data-action="toggle-concentration" class="' + (p.concentration ? 'concentration-active' : '') + '" title="Concentration" style="flex:none;width:44px;height:44px;margin-right:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:' + (p.concentration ? '#a78bfa' : '#6b5a3b') + ';background:' + (p.concentration ? 'rgba(167,139,250,0.18)' : 'transparent') + ';border:1px solid ' + (p.concentration ? 'rgba(167,139,250,0.6)' : 'rgba(196,164,108,0.25)') + '">' + ICON_CONCENTRATION + '</div>' +
+            '</div>' +
             (spellGroupsHtml || '<div style="font-size:12px;color:#6b5a3b">Aucun niveau actif — configurez-les dans les paramètres.</div>') +
           '</div>' +
           classHtml +
@@ -257,7 +316,7 @@
     }).join('');
 
     return (
-      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
+      '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
         '<div style="display:flex;align-items:center;gap:12px;flex:none">' +
           '<div class="icon-btn" data-action="back-to-main">' + ICON_BACK + '</div>' +
           '<div style="font-size:19px;font-weight:700;color:#f0d9a8" class="font-cinzel">Paramètres</div>' +
@@ -284,6 +343,32 @@
               '<input type="text" id="classLabelInput" value="' + escapeHtml(p.classResource.label) + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' placeholder="Libellé (ex. Ki)" style="flex:1;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;padding:0 10px;box-sizing:border-box"/>' +
               '<input type="text" inputmode="numeric" pattern="[0-9]*" id="classMaxInput" value="' + p.classResource.max + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' style="width:52px;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
             '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Caractéristiques</label>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:#2b2119;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' +
+            ABILITY_KEYS.map(function (key) {
+              return '<div style="display:flex;flex-direction:column;gap:4px;min-width:0">' +
+                '<label style="font-size:11px;color:#a08d64;text-align:center">' + ABILITY_LABELS[key] + '</label>' +
+                '<input type="text" inputmode="numeric" pattern="-?[0-9]*" data-action="ability-input" data-key="' + key + '" value="' + formatSigned(p.abilityScores[key]) + '" style="width:100%;height:44px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:15px;text-align:center;box-sizing:border-box"/>' +
+                '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Compétences</label>' +
+          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(196,164,108,0.2)">' +
+            p.skills.map(function (s, idx) {
+              return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#2b2119;border-bottom:1px solid rgba(196,164,108,0.14)">' +
+                '<div style="flex:1;font-size:13px;font-weight:600;color:#efe4cf">' + escapeHtml(s.name) + '</div>' +
+                '<div data-action="skill-dec" data-index="' + idx + '" style="flex:none;width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none">&minus;</div>' +
+                '<input type="text" inputmode="numeric" pattern="-?[0-9]*" data-action="skill-input" data-index="' + idx + '" value="' + formatSigned(s.modifier) + '" style="width:44px;height:36px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+                '<div data-action="skill-inc" data-index="' + idx + '" style="flex:none;width:36px;height:36px;border-radius:8px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#22c55e;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none">+</div>' +
+                '</div>';
+            }).join('') +
           '</div>' +
         '</div>' +
 
@@ -405,6 +490,26 @@
     if (importInput) {
       importInput.addEventListener('change', onImportFile);
     }
+
+    app.querySelectorAll('[data-action="ability-input"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var key = el.getAttribute('data-key');
+        var scores = profile().abilityScores;
+        scores[key] = clamp(toInt(el.value, scores[key]), -99, 99);
+        saveState();
+        render();
+      });
+    });
+
+    app.querySelectorAll('[data-action="skill-input"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var idx = parseInt(el.getAttribute('data-index'), 10);
+        var skill = profile().skills[idx];
+        skill.modifier = clamp(toInt(el.value, skill.modifier), -99, 99);
+        saveState();
+        render();
+      });
+    });
   }
 
   function onAction(e) {
@@ -441,6 +546,25 @@
       }
       case 'toggle-class-enabled': {
         profile().classResource.enabled = !profile().classResource.enabled;
+        saveState(); render();
+        break;
+      }
+      case 'toggle-concentration': {
+        profile().concentration = !profile().concentration;
+        saveState(); render();
+        break;
+      }
+      case 'skill-inc': {
+        var incIdx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+        var incSkill = profile().skills[incIdx];
+        incSkill.modifier = clamp(incSkill.modifier + 1, -99, 99);
+        saveState(); render();
+        break;
+      }
+      case 'skill-dec': {
+        var decIdx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+        var decSkill = profile().skills[decIdx];
+        decSkill.modifier = clamp(decSkill.modifier - 1, -99, 99);
         saveState(); render();
         break;
       }
@@ -493,7 +617,11 @@
 
   function applyHeal() {
     var hp = profile().hp;
-    hp.current = clamp(hp.current + 1, 0, hp.max);
+    if (hp.current >= hp.max) {
+      hp.temp = clamp(hp.temp + 1, 0, 999);
+    } else {
+      hp.current = clamp(hp.current + 1, 0, hp.max);
+    }
     saveState();
     render();
   }
@@ -551,7 +679,7 @@
       try {
         var data = JSON.parse(String(reader.result));
         if (!isValidProfile(data)) throw new Error('invalid');
-        state.profiles[state.activeProfileIndex] = data;
+        state.profiles[state.activeProfileIndex] = sanitizeProfile(data);
         ui.importError = '';
         saveState();
         render();
