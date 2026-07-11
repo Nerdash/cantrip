@@ -54,7 +54,10 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    à un niveau). Navigation par tap sur un onglet (`data-action="grimoire-tab"`) ou par swipe
    horizontal sur la zone de contenu (`#grimoireSwipe`, listeners `touchstart`/`touchend` dans
    `bindEvents()`) : swipe vers la gauche = niveau suivant, swipe vers la droite = niveau
-   précédent, sans effet de bord aux extrémités (`grimoireStep()`). L'onglet actif
+   précédent, sans effet de bord aux extrémités (`grimoireStep()`). Le swipe (mais pas le tap sur
+   un onglet) déclenche une animation de glissement directionnelle sur `#grimoireSwipe`
+   (`ui.grimoireAnimDirection`, classes CSS `grimoire-anim-next`/`-prev`, consommée une seule
+   fois par `renderGrimoire()` pour ne pas se rejouer aux re-renders suivants). L'onglet actif
    (`ui.grimoireTab`, état éphémère) est recalé sur 0 si le niveau affiché n'existe plus après
    un changement de config dans Paramètres (ex. désactivation du niveau en cours de visionnage).
    Filtres par type sur la même ligne que le titre "Grimoire", alignés à droite : Action / Bonus
@@ -64,7 +67,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    niveau puisqu'il n'est jamais réinitialisé par `renderGrimoire()`/`grimoireStep()`.
 4. **Paramètres** — nom du personnage, CA/Initiative/Déplacement (`data-action="combat-input"`,
    Initiative signée via `formatSigned()`, CA/Déplacement non signés), config des emplacements de
-   sorts et des ressources de classe, saisie des caractéristiques/compétences, export/import JSON.
+   sorts et des ressources de classe, saisie des caractéristiques/compétences. Le toggle « Activer
+   le thème sombre » et la rubrique "Sauvegarde" (export/import JSON) sont en bas de page, dans
+   cet ordre (thème puis Sauvegarde) — voir section Thème clair/sombre plus bas.
    Les emplacements de sorts s'activent dans l'ordre croissant : impossible d'activer un niveau
    si un niveau inférieur est désactivé (message d'erreur `ui.settingsLevelError`, pas
    d'auto-activation en cascade). Désactiver un niveau qui a des niveaux supérieurs actifs ouvre

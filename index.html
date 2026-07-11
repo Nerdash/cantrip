@@ -113,6 +113,16 @@
     50% { box-shadow: inset 0 0 10px 3px rgba(167,139,250,0.7); }
   }
   .concentration-active { animation: concentration-pulse 1.7s ease-in-out infinite; }
+  @keyframes grimoire-slide-next {
+    from { opacity: 0; transform: translateX(28px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes grimoire-slide-prev {
+    from { opacity: 0; transform: translateX(-28px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .grimoire-anim-next { animation: grimoire-slide-next 220ms ease-out; }
+  .grimoire-anim-prev { animation: grimoire-slide-prev 220ms ease-out; }
 </style>
 </head>
 <body>
@@ -251,6 +261,7 @@
     importError: '',
     statsSearch: '',
     grimoireTab: 0, // niveau numérique (0..9) ou 'classe'
+    grimoireAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderGrimoire()
     grimoireFilters: { action: false, bonus: false, reaction: false }, // conservés entre les onglets de niveau
     settingsLevelError: '',
     disableLevelDialog: null // { level: number } quand la confirmation de désactivation est ouverte
@@ -601,6 +612,9 @@
   }
 
   function renderGrimoire() {
+    var animDirection = ui.grimoireAnimDirection;
+    ui.grimoireAnimDirection = null;
+
     var tabs = grimoireTabs();
     if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = 0;
 
@@ -642,7 +656,7 @@
           '<div style="display:flex;gap:6px">' + filterChipsHtml + '</div>' +
         '</div>' +
         '<div class="hscroll" style="flex:none;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + tabsHtml + '</div>' +
-        '<div id="grimoireSwipe" data-scroll-root style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px">' + contentHtml + '</div>' +
+        '<div id="grimoireSwipe" data-scroll-root class="' + (animDirection === 'next' ? 'grimoire-anim-next' : animDirection === 'prev' ? 'grimoire-anim-prev' : '') + '" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px">' + contentHtml + '</div>' +
       '</div>'
     );
   }
@@ -706,13 +720,6 @@
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
-            '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
-            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
-          '</div>' +
-        '</div>' +
-
-        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Emplacements de sorts</label>' +
           '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + levelRows + '</div>' +
           (ui.settingsLevelError ? '<div style="font-size:11px;color:#ef4444">' + escapeHtml(ui.settingsLevelError) + '</div>' : '') +
@@ -752,14 +759,24 @@
           '</div>' +
         '</div>' +
 
-        '<div style="display:flex;gap:10px;margin-top:2px;flex:none">' +
-          '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
-          '<label style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
-            'Importer (JSON)' +
-            '<input type="file" accept="application/json" id="importInput" style="display:none"/>' +
-          '</label>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
+            '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
+            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
+          '</div>' +
         '</div>' +
-        (ui.importError ? '<div style="flex:none;font-size:12px;color:#ef4444;text-align:center">' + escapeHtml(ui.importError) + '</div>' : '') +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Sauvegarde</label>' +
+          '<div style="display:flex;gap:10px">' +
+            '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
+            '<label style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
+              'Importer (JSON)' +
+              '<input type="file" accept="application/json" id="importInput" style="display:none"/>' +
+            '</label>' +
+          '</div>' +
+          (ui.importError ? '<div style="flex:none;font-size:12px;color:#ef4444;text-align:center">' + escapeHtml(ui.importError) + '</div>' : '') +
+        '</div>' +
       '</div>'
     );
   }
@@ -956,8 +973,10 @@
     var tabs = grimoireTabs();
     var idx = tabs.indexOf(ui.grimoireTab);
     if (idx === -1) idx = 0;
-    idx = clamp(idx + delta, 0, tabs.length - 1);
-    ui.grimoireTab = tabs[idx];
+    var newIdx = clamp(idx + delta, 0, tabs.length - 1);
+    if (newIdx === idx) return;
+    ui.grimoireAnimDirection = delta > 0 ? 'next' : 'prev';
+    ui.grimoireTab = tabs[newIdx];
     render();
   }
 

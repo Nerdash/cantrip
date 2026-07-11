@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jdr-tracker-v11';
+const CACHE_NAME = 'jdr-tracker-v13';
 const CORE_ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {
