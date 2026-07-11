@@ -39,10 +39,13 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
 2. **Stats** — caractéristiques (6) et compétences (18, D&D 5e, noms français) en lecture
    seule, avec champ de recherche filtrant la liste en direct. Les valeurs sont saisies
    manuellement dans Paramètres (l'app ne calcule aucun modificateur).
-3. **Grimoire** — **work in progress volontaire**, affiche juste un état "Work in progress".
-   Spécifié en détail dans `specifications_jdr_mobile_v2.md` section 7.3, à développer dans une
-   itération future (liste de sorts avec nom/niveau/concentration/description courte, gestion
-   déportée dans Paramètres).
+3. **Grimoire** — affiche les capacités du personnage (sorts par niveau + capacités de classe et
+   dons), regroupées par section avec badge de type d'action coloré (Action/Bonus/Réaction/
+   Rituel/Passif...), niveau, portée/durée et note d'usage en italique. Contenu **statique,
+   codé en dur** dans la constante `SPELLBOOK` (`index.html`, pas dans `state`) pour le
+   personnage Calix Noctavel — pas d'UI d'édition. Une gestion générique (CRUD depuis
+   Paramètres, multi-personnage) reste à faire si besoin ; voir `specifications_jdr_mobile_v2.md`
+   section 7.3 pour la spec d'origine.
 4. **Paramètres** — nom du personnage, config des emplacements de sorts et ressource de classe,
    saisie des caractéristiques/compétences, export/import JSON.
 
@@ -62,12 +65,23 @@ révisé"). En cas de divergence, les arbitrages suivants ont été retenus :
 - Les champs "Max" (sorts, ressource de classe) sont désactivés visuellement tant que le niveau
   correspondant n'est pas activé.
 
+## Thème clair/sombre
+
+L'app supporte un thème sombre (par défaut) et un thème clair "ocre/parchemin" (pas blanc, pour
+garder l'aspect médiéval), basculable via un toggle dans Paramètres. Persisté dans
+`state.theme` (`'dark'` | `'light'`), appliqué via l'attribut `data-theme` sur `<html>`
+(`applyTheme()`), qui pilote un jeu de variables CSS custom properties définies dans `:root` /
+`:root[data-theme="light"]` (fonds, bordures, textes, couleurs d'accent des badges). **Toute
+nouvelle couleur ajoutée dans un template JS doit utiliser `var(--...)` plutôt qu'un hex en dur**
+pour rester compatible avec les deux thèmes — voir le bloc `<style>` en tête de fichier pour la
+liste des variables disponibles.
+
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`jdr-tracker-v2`) — **incrémenter cette constante à chaque changement significatif
-des assets statiques** (`index.html`, `manifest.json`, `icon.svg`) pour forcer l'invalidation
-du cache côté client.
+versionné (`jdr-tracker-v5` au 2026-07-11) — **incrémenter cette constante à chaque changement
+significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`) pour forcer
+l'invalidation du cache côté client.
 
 ## Déploiement
 
@@ -90,7 +104,8 @@ toute nouvelle machine avant de committer.
 
 ## Reste à faire / pistes non traitées
 
-- Grimoire : re-spécifier en détail et implémenter (différé volontairement, voir plus haut).
+- Grimoire : gestion générique (CRUD, multi-personnage) si besoin au-delà du contenu statique
+  actuel de Calix Noctavel — voir section Grimoire plus haut.
 - Génération d'un `.apk` installable : voie recommandée — passer l'URL GitHub Pages dans
   PWABuilder.com pour générer un APK signé sans installer Android Studio.
 - Icône et animation de concentration : validées visuellement mais pourraient encore évoluer
