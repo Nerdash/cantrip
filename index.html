@@ -198,11 +198,10 @@
 
   // ---- grimoire (Calix Noctavel) ----
   var SPELLBOOK = {
-    characterName: "Calix Noctavel",
-    subtitle: "Barde · Collège du Savoir · Tieffeline avec ascendance infernale",
     sections: [
       {
         title: "Sorts mineurs (niveau 0)",
+        levelTag: "Niv. 0",
         spells: [
           { name: "Moquerie cruelle", type: "ACTION", range: "18m", desc: "Jet de sauvegarde de Sagesse ou 1d4 dégâts psychiques + désavantage au prochain jet d'attaque de la cible.", note: "Fonctionne si la cible entend (sans comprendre). 2d4 au niveau 5, 3d4 au niveau 11." },
           { name: "Main de mage", type: "ACTION", range: "9m", desc: "Main spectrale : manipule des objets, ouvre des portes non verrouillées, range ou récupère un objet. Dure 1 minute.", note: "Ne peut pas attaquer ni porter plus de 5 kg." },
@@ -212,6 +211,7 @@
       },
       {
         title: "Niveau 1",
+        levelTag: "Niv. 1",
         spells: [
           { name: "Fou rire de Tasha", type: "ACTION", range: "9m · Conc. 1 min", desc: "Jet de sauvegarde de Sagesse ou la cible tombe à terre, incapable d'agir. Nouveau jet en fin de tour ou après des dégâts.", note: "Inefficace si Intelligence 4 ou moins." },
           { name: "Identification", type: "RITUEL 1 MIN", range: "Contact", desc: "Révèle les propriétés d'un objet magique (charges, sorts) ou les sorts actifs sur une créature.", note: "Utilisable sans emplacement en rituel. Nécessite une perle à 100 po + une plume de hibou." },
@@ -222,6 +222,7 @@
       },
       {
         title: "Niveau 2",
+        levelTag: "Niv. 2",
         spells: [
           { name: "Image miroir", type: "ACTION", range: "Personnel · 1 min", desc: "3 doubles illusoires. Les attaques sont redirigées sur 1d20 : 6+ (3 doubles) / 8+ (2) / 11+ (1). CA du double = 10 + mod. Dex.", note: "Défense passive, pas de concentration." },
           { name: "Représailles infernales", type: "RÉACTION", range: "Portée", desc: "Quand blessée par une créature visible : 2d10 dégâts de feu à la cible. Jet de sauvegarde de Dextérité, demi-dégâts si réussi.", note: "Ascendance infernale. 1x / repos long. Lancé comme un sort de niveau 2. Disponible dès le niveau 3." },
@@ -231,6 +232,7 @@
       },
       {
         title: "Niveau 3",
+        levelTag: "Niv. 3",
         spells: [
           { name: "Communication à distance", type: "ACTION", range: "Illimitée", desc: "Message de 25 mots à une créature connue, n'importe où. Elle peut répondre immédiatement.", note: "5% d'échec si sur un autre plan d'existence." },
           { name: "Hâte", type: "ACTION", range: "9m · Conc. 1 min", desc: "Cible : vitesse x2, +2 CA, avantage aux jets de Dextérité, action supplémentaire (1 attaque / Foncer / Désengager / Se cacher / Utiliser un objet).", note: "À la fin : léthargie 1 tour. Protéger sa concentration absolument." },
@@ -240,12 +242,14 @@
       },
       {
         title: "Niveau 4",
+        levelTag: "Niv. 4",
         spells: [
           { name: "Porte dimensionnelle", type: "ACTION", range: "150m", desc: "Téléportation vers un endroit visible, visualisé ou décrit. Peut emmener 1 créature consentante à 1,5m.", note: "Échec + 4d6 dégâts si la destination est occupée." }
         ]
       },
       {
         title: "Capacités de classe et dons",
+        levelTag: "Classe",
         spells: [
           { name: "Inspiration bardique", type: "BONUS", range: "18m", desc: "Donne 1d6 (d8 dès niveau 5) à une créature. Elle ajoute le dé à un jet après le lancer, avant l'annonce du MD.", note: "Utilisations = mod. Cha. Recharge à un repos long (repos court dès niveau 5)." },
           { name: "Mots cinglants", type: "RÉACTION", range: "18m", desc: "Après un jet (attaque/carac./dégâts) d'une créature : dépense 1 inspiration bardique, soustrait le dé du résultat.", note: "Avant l'annonce du MD. Inefficace si la cible ne peut pas entendre ou est immunisée aux charmes." },
@@ -437,7 +441,10 @@
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
             '<div style="font-size:14px;font-weight:700;color:#efe4cf;font-family:\'Cinzel\',serif">' + escapeHtml(spell.name) + '</div>' +
             '<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px">' +
-              '<div style="' + spellBadgeStyle(spell.type) + 'padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.03em;white-space:nowrap">' + escapeHtml(spell.type) + '</div>' +
+              '<div style="display:flex;align-items:center;gap:5px">' +
+                '<div style="background:rgba(196,164,108,0.12);border:1px solid rgba(196,164,108,0.32);color:#c9b382;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap">' + escapeHtml(section.levelTag) + '</div>' +
+                '<div style="' + spellBadgeStyle(spell.type) + 'padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.03em;white-space:nowrap">' + escapeHtml(spell.type) + '</div>' +
+              '</div>' +
               '<div style="font-size:10px;color:#a08d64;white-space:nowrap">' + escapeHtml(spell.range) + '</div>' +
             '</div>' +
           '</div>' +
@@ -454,10 +461,7 @@
 
     return (
       '<div style="display:flex;flex-direction:column;height:100%;gap:12px">' +
-        '<div style="flex:none">' +
-          '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">Grimoire</div>' +
-          '<div style="font-size:12px;color:#a08d64;margin-top:2px">' + escapeHtml(SPELLBOOK.characterName) + ' — ' + escapeHtml(SPELLBOOK.subtitle) + '</div>' +
-        '</div>' +
+        '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Grimoire</div>' +
         '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px">' + sectionsHtml + '</div>' +
       '</div>'
     );
