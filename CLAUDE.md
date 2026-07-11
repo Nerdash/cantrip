@@ -37,7 +37,13 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    Déplacement (`profile.combatStats: { ac, initiative, speed }`, lecture seule, éditées dans
    Paramètres), PV (bloc fusionné avec bouclier temporaire), emplacements de sorts groupés par
    niveau en badges circulaires, ressource(s) de classe (un bloc de badges par ressource
-   configurée, voir Paramètres ci-dessous), marqueur de concentration, bouton "Repos" unique.
+   configurée, voir Paramètres ci-dessous), bouton "Repos" unique.
+   Deux marqueurs toggle (`profile.concentration`, `profile.inspiration`, booléens indépendants,
+   non validés/sanitizés à l'import comme le reste du profil) alignés à droite sur la ligne du nom
+   du personnage, dans l'ordre inspiration puis concentration : point d'inspiration (icône étoile
+   `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
+   pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
+   violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
 2. **Stats** — caractéristiques (6) et compétences (18, D&D 5e, noms français) en lecture
    seule, avec champ de recherche filtrant la liste en direct. Les valeurs sont saisies
    manuellement dans Paramètres (l'app ne calcule aucun modificateur).
