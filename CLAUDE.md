@@ -100,14 +100,18 @@ révisé"). En cas de divergence, les arbitrages suivants ont été retenus :
 
 ## Thème clair/sombre
 
-L'app supporte un thème sombre (par défaut) et un thème clair "ocre/parchemin" (pas blanc, pour
-garder l'aspect médiéval), basculable via un toggle dans Paramètres. Persisté dans
-`state.theme` (`'dark'` | `'light'`), appliqué via l'attribut `data-theme` sur `<html>`
-(`applyTheme()`), qui pilote un jeu de variables CSS custom properties définies dans `:root` /
-`:root[data-theme="light"]` (fonds, bordures, textes, couleurs d'accent des badges). **Toute
-nouvelle couleur ajoutée dans un template JS doit utiliser `var(--...)` plutôt qu'un hex en dur**
-pour rester compatible avec les deux thèmes — voir le bloc `<style>` en tête de fichier pour la
-liste des variables disponibles.
+L'app supporte un thème clair "ocre/parchemin" (par défaut, pas blanc, pour garder l'aspect
+médiéval) et un thème sombre, basculable dans Paramètres via un unique toggle « Activer le thème
+sombre » (`data-action="toggle-theme"`). Persisté dans `state.theme` (`'dark'` | `'light'`,
+défaut `'light'` dans `defaultState()` et dans le fallback de `loadState()`) — si l'utilisateur
+active le thème sombre, ce choix est conservé entre les sessions comme n'importe quelle valeur de
+`state`. Le thème est appliqué via l'attribut `data-theme` sur `<html>` (`applyTheme()`), qui
+pilote un jeu de variables CSS custom properties définies dans `:root` / `:root[data-theme="light"]`
+(fonds, bordures, textes, couleurs d'accent des badges). **Toute nouvelle couleur ajoutée dans un
+template JS doit utiliser `var(--...)` plutôt qu'un hex en dur** pour rester compatible avec les
+deux thèmes — voir le bloc `<style>` en tête de fichier pour la liste des variables disponibles.
+Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`theme_color` dans
+`manifest.json` reflètent la teinte claire par défaut (`#ecdcb0`).
 
 ## Service Worker (`sw.js`)
 

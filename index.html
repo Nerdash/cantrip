@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Suivi de Personnage</title>
-<meta name="theme-color" content="#171209">
+<meta name="theme-color" content="#ecdcb0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -203,7 +203,7 @@
   }
 
   function defaultState() {
-    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()], theme: 'dark' };
+    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()], theme: 'light' };
   }
 
   // ---- persistence ----
@@ -214,7 +214,7 @@
       var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
       parsed.profiles.forEach(sanitizeProfile);
-      if (parsed.theme !== 'light' && parsed.theme !== 'dark') parsed.theme = 'dark';
+      if (parsed.theme !== 'light' && parsed.theme !== 'dark') parsed.theme = 'light';
       return parsed;
     } catch (e) {
       return defaultState();
@@ -670,10 +670,9 @@
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Thème</label>' +
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
-            '<div style="font-size:13px;font-weight:600">' + (state.theme === 'light' ? 'Clair (ocre)' : 'Sombre') + '</div>' +
-            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'light') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'light') + '"></div></div>' +
+            '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
+            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
           '</div>' +
         '</div>' +
 
