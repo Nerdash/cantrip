@@ -15,20 +15,66 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
+    --bg-gradient-1: #211a12;
+    --bg-gradient-2: #171209;
+    --bg-deep: #171209;
     --bg-card: #2b2119;
-    --border-card: rgba(196,164,108,0.2);
+    --bg-card-alt: #241a10;
+    --bg-nav: #1c160e;
+    --border-strong: #4a3c28;
+    --border-tint: 196,164,108;
+    --border-card: rgba(var(--border-tint), 0.2);
     --text-main: #efe4cf;
     --text-gold: #f0d9a8;
     --text-label: #b8a988;
     --text-muted: #a08d64;
     --text-dim: #6b5a3b;
-    --border-strong: #4a3c28;
-    --bg-deep: #171209;
+    --text-desc: #c9bb9c;
+    --text-note: #8a7a54;
+    --text-chip: #c9b382;
+    --accent-red-text: #fca5a5;
+    --accent-green-text: #86efac;
+    --accent-blue-text: #7dd3fc;
+    --accent-purple-text: #c4b5fd;
+    --accent-purple-solid: #a78bfa;
+    --accent-gray-text: #cbd5e1;
+    --accent-gold-badge-text: #e0c890;
+    --bg-texture: rgba(255,255,255,0.012);
+    --checkbox-border-idle: rgba(255,255,255,0.25);
+    --ink-bright: #efe4cf;
+    --ink-dark: #171209;
+  }
+  :root[data-theme="light"] {
+    --bg-gradient-1: #f6ecd2;
+    --bg-gradient-2: #ecdcb0;
+    --bg-deep: #e2cd9c;
+    --bg-card: #f1e2bc;
+    --bg-card-alt: #e8d7ab;
+    --bg-nav: #e6d4a2;
+    --border-strong: #8a6a3a;
+    --border-tint: 122,90,42;
+    --text-main: #3a2a15;
+    --text-gold: #8a5a16;
+    --text-label: #7a6440;
+    --text-muted: #8f7850;
+    --text-dim: #a89470;
+    --text-desc: #5c4a2c;
+    --text-note: #7a6440;
+    --text-chip: #6b5430;
+    --accent-red-text: #b91c1c;
+    --accent-green-text: #157a3d;
+    --accent-blue-text: #0a6ea8;
+    --accent-purple-text: #6d28d9;
+    --accent-purple-solid: #7c3aed;
+    --accent-gray-text: #55503f;
+    --accent-gold-badge-text: #7c4a12;
+    --bg-texture: rgba(90,60,20,0.035);
+    --checkbox-border-idle: rgba(58,42,21,0.3);
   }
   html, body {
     height: 100%;
     margin: 0;
-    background: #171209;
+    background: var(--bg-deep);
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
   }
@@ -44,22 +90,22 @@
     position: relative;
     overflow: hidden;
     background:
-      linear-gradient(160deg, #211a12 0%, #171209 100%),
-      repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 2px, transparent 2px, transparent 7px);
+      linear-gradient(160deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%),
+      repeating-linear-gradient(45deg, var(--bg-texture) 0px, var(--bg-texture) 2px, transparent 2px, transparent 7px);
     box-sizing: border-box;
     padding: max(20px, env(safe-area-inset-top) + 14px) max(18px, env(safe-area-inset-right) + 4px) max(16px, env(safe-area-inset-bottom) + 12px) max(18px, env(safe-area-inset-left) + 4px);
     display: flex;
     flex-direction: column;
   }
   .font-cinzel { font-family: 'Cinzel', serif; }
-  input::placeholder { color: #6b5a3d; }
+  input::placeholder { color: var(--text-dim); }
   .hscroll { scrollbar-width: none; -ms-overflow-style: none; }
   .hscroll::-webkit-scrollbar { display: none; }
   .badge { flex: none; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; user-select: none; }
-  .badge-used { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5; font-weight: 600; }
-  .badge-available { background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.5); color: #86efac; font-weight: 700; }
+  .badge-used { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.45); color: var(--accent-red-text); font-weight: 600; }
+  .badge-available { background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.5); color: var(--accent-green-text); font-weight: 700; }
   .toggle-track { width: 40px; height: 24px; border-radius: 12px; position: relative; cursor: pointer; flex: none; transition: background 150ms; }
-  .toggle-knob { width: 18px; height: 18px; border-radius: 9px; background: var(--text-main); position: absolute; top: 3px; transition: left 150ms; }
+  .toggle-knob { width: 18px; height: 18px; border-radius: 9px; background: var(--ink-bright); position: absolute; top: 3px; transition: left 150ms; }
   .icon-btn { width: 44px; height: 44px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border-card); display: flex; align-items: center; justify-content: center; color: var(--text-label); cursor: pointer; flex: none; }
   input:disabled { opacity: 0.45; }
   @keyframes concentration-pulse {
@@ -128,7 +174,7 @@
   }
 
   function defaultState() {
-    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()] };
+    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()], theme: 'dark' };
   }
 
   // ---- persistence ----
@@ -139,6 +185,7 @@
       var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
       parsed.profiles.forEach(sanitizeProfile);
+      if (parsed.theme !== 'light' && parsed.theme !== 'dark') parsed.theme = 'dark';
       return parsed;
     } catch (e) {
       return defaultState();
@@ -151,7 +198,14 @@
     } catch (e) { /* localStorage unavailable or full: state stays in memory only */ }
   }
 
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', state.theme);
+    var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) themeColorMeta.setAttribute('content', state.theme === 'light' ? '#ecdcb0' : '#171209');
+  }
+
   var state = loadState();
+  applyTheme();
 
   // ---- ephemeral UI state (not persisted) ----
   var ui = {
@@ -187,7 +241,7 @@
 
   // ---- SVG icons ----
   var ICON_GEAR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
-  var ICON_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#171209" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--ink-dark)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var ICON_CONCENTRATION = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><rect x="7.5" y="7.5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10.7" y="10.7" width="2.6" height="2.6" fill="currentColor"/></svg>';
   var ICON_TRACKER = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10-9.3C.5 8 2 4.5 5.6 4c2-.3 3.7.7 4.9 2.3C11.7 4.7 13.4 3.7 15.4 4 19 4.5 20.5 8 19 11.7 16.5 16.4 12 21 12 21z"/></svg>';
   var ICON_STATS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>';
@@ -263,12 +317,12 @@
 
   function spellBadgeStyle(type) {
     var t = type.toUpperCase();
-    if (t.indexOf('BONUS') === 0) return 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:#86efac;';
-    if (t.indexOf('RÉACTION') === 0) return 'background:rgba(239,68,68,0.16);border:1px solid rgba(239,68,68,0.45);color:#fca5a5;';
-    if (t.indexOf('RITUEL') === 0) return 'background:rgba(167,139,250,0.16);border:1px solid rgba(167,139,250,0.45);color:#c4b5fd;';
-    if (t.indexOf('PASSIF') === 0) return 'background:rgba(148,163,184,0.16);border:1px solid rgba(148,163,184,0.45);color:#cbd5e1;';
-    if (t.indexOf('ACTION') === 0) return 'background:rgba(125,211,252,0.16);border:1px solid rgba(125,211,252,0.45);color:#7dd3fc;';
-    return 'background:rgba(196,164,108,0.16);border:1px solid rgba(196,164,108,0.45);color:#e0c890;';
+    if (t.indexOf('BONUS') === 0) return 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);';
+    if (t.indexOf('RÉACTION') === 0) return 'background:rgba(239,68,68,0.16);border:1px solid rgba(239,68,68,0.45);color:var(--accent-red-text);';
+    if (t.indexOf('RITUEL') === 0) return 'background:rgba(167,139,250,0.16);border:1px solid rgba(167,139,250,0.45);color:var(--accent-purple-text);';
+    if (t.indexOf('PASSIF') === 0) return 'background:rgba(148,163,184,0.16);border:1px solid rgba(148,163,184,0.45);color:var(--accent-gray-text);';
+    if (t.indexOf('ACTION') === 0) return 'background:rgba(125,211,252,0.16);border:1px solid rgba(125,211,252,0.45);color:var(--accent-blue-text);';
+    return 'background:rgba(var(--border-tint),0.16);border:1px solid rgba(var(--border-tint),0.45);color:var(--accent-gold-badge-text);';
   }
 
   // ---- render ----
@@ -293,12 +347,12 @@
   function renderBottomNav() {
     var itemsHtml = PAGES.map(function (page) {
       var active = ui.view === page.view;
-      return '<div data-action="nav" data-view="' + page.view + '" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;cursor:pointer;color:' + (active ? '#f0d9a8' : '#6b5a3b') + '">' +
+      return '<div data-action="nav" data-view="' + page.view + '" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;cursor:pointer;color:' + (active ? 'var(--text-gold)' : 'var(--text-dim)') + '">' +
         page.icon +
         '<div style="font-size:10px;font-weight:600;letter-spacing:0.02em">' + page.label + '</div>' +
         '</div>';
     }).join('');
-    return '<div style="flex:none;display:flex;align-items:stretch;border-top:1px solid rgba(196,164,108,0.2);background:#1c160e;border-radius:12px;overflow:hidden;margin-top:4px">' + itemsHtml + '</div>';
+    return '<div style="flex:none;display:flex;align-items:stretch;border-top:1px solid rgba(var(--border-tint),0.2);background:var(--bg-nav);border-radius:12px;overflow:hidden;margin-top:4px">' + itemsHtml + '</div>';
   }
 
   function render() {
@@ -324,16 +378,16 @@
     var hp = p.hp;
 
     var maxHtml = ui.editingMax
-      ? '<input id="hpMaxInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.max + '" style="width:60px;font-size:19px;color:#efe4cf;background:transparent;border:none;border-bottom:1px solid #ef4444;outline:none;padding:0"/>'
-      : '<div id="hpMaxDisplay" style="font-size:19px;color:#a08d64;cursor:pointer;border-bottom:1px dashed #4a3c28">' + hp.max + '</div>';
+      ? '<input id="hpMaxInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.max + '" style="width:60px;font-size:19px;color:var(--text-main);background:transparent;border:none;border-bottom:1px solid #ef4444;outline:none;padding:0"/>'
+      : '<div id="hpMaxDisplay" style="font-size:19px;color:var(--text-muted);cursor:pointer;border-bottom:1px dashed var(--border-strong)">' + hp.max + '</div>';
 
     var tempHtml;
     if (ui.editingTemp) {
       tempHtml = '<div style="display:flex;align-items:baseline;gap:2px;margin-left:8px">' +
-        '<div style="font-size:19px;font-weight:700;color:#7dd3fc">+</div>' +
-        '<input id="tempInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.temp + '" style="width:44px;font-size:19px;font-weight:700;color:#7dd3fc;background:transparent;border:none;border-bottom:1px solid #7dd3fc;outline:none;padding:0"/></div>';
+        '<div style="font-size:19px;font-weight:700;color:var(--accent-blue-text)">+</div>' +
+        '<input id="tempInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.temp + '" style="width:44px;font-size:19px;font-weight:700;color:var(--accent-blue-text);background:transparent;border:none;border-bottom:1px solid var(--accent-blue-text);outline:none;padding:0"/></div>';
     } else {
-      tempHtml = '<div id="tempDisplay" style="font-size:19px;font-weight:700;color:#7dd3fc;cursor:pointer;border-bottom:1px dashed rgba(125,211,252,0.5);margin-left:8px">+' + hp.temp + '</div>';
+      tempHtml = '<div id="tempDisplay" style="font-size:19px;font-weight:700;color:var(--accent-blue-text);cursor:pointer;border-bottom:1px dashed rgba(125,211,252,0.5);margin-left:8px">+' + hp.temp + '</div>';
     }
 
     var spellGroupsHtml = p.spellLevels
@@ -343,7 +397,7 @@
           return '<div class="badge ' + (used ? 'badge-used' : 'badge-available') + '" data-action="toggle-spell" data-level="' + l.level + '" data-index="' + i + '">' + l.level + '</div>';
         }).join('');
         return '<div style="display:flex;flex-direction:column;gap:4px">' +
-          '<div style="font-size:11px;color:#a08d64;font-weight:600">Niveau ' + l.level + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);font-weight:600">Niveau ' + l.level + '</div>' +
           '<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + badges + '</div>' +
           '</div>';
       }).join('');
@@ -354,7 +408,7 @@
         return '<div class="badge ' + (used ? 'badge-used' : 'badge-available') + '" data-action="toggle-class" data-index="' + i + '">' + (i + 1) + '</div>';
       }).join('');
       classHtml = '<div style="display:flex;flex-direction:column;gap:6px">' +
-        '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">' + escapeHtml(p.classResource.label || 'Ressource') + '</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text-label);text-transform:uppercase;letter-spacing:0.08em">' + escapeHtml(p.classResource.label || 'Ressource') + '</div>' +
         '<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + cbadges + '</div>' +
         '</div>';
     }
@@ -363,13 +417,13 @@
       '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + escapeHtml(p.characterName) + '</div>' +
 
-        '<div style="background:#2b2119;border:1px solid rgba(196,164,108,0.2);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:16px">' +
+        '<div style="background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:16px">' +
           '<div data-action="damage" style="flex:none;width:80px;height:76px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
           '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center">' +
-            '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Points de vie</div>' +
+            '<div style="font-size:12px;font-weight:600;color:var(--text-label);text-transform:uppercase;letter-spacing:0.08em">Points de vie</div>' +
             '<div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap">' +
               '<div style="font-size:42px;font-weight:800;line-height:1">' + hp.current + '</div>' +
-              '<div style="font-size:19px;color:#a08d64">/</div>' +
+              '<div style="font-size:19px;color:var(--text-muted)">/</div>' +
               maxHtml +
               tempHtml +
             '</div>' +
@@ -378,7 +432,7 @@
               var tempPct = hp.max > 0 ? clamp(Math.round(hp.temp / hp.max * 100), 0, currentPct) : 0;
               return '<div style="width:100%;height:5px;border-radius:3px;background:rgba(239,68,68,0.35);overflow:hidden;position:relative">' +
                 '<div style="height:100%;width:' + currentPct + '%;background:#22c55e"></div>' +
-                (tempPct > 0 ? '<div style="position:absolute;top:0;right:' + (100 - currentPct) + '%;width:' + tempPct + '%;height:100%;background:#7dd3fc"></div>' : '') +
+                (tempPct > 0 ? '<div style="position:absolute;top:0;right:' + (100 - currentPct) + '%;width:' + tempPct + '%;height:100%;background:var(--accent-blue-text)"></div>' : '') +
               '</div>';
             })() +
           '</div>' +
@@ -388,15 +442,15 @@
         '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px;margin-top:10px">' +
           '<div style="display:flex;flex-direction:column;gap:8px">' +
             '<div style="display:flex;align-items:center;justify-content:space-between">' +
-              '<div style="font-size:12px;font-weight:600;color:#b8a988;text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
-              '<div data-action="toggle-concentration" class="' + (p.concentration ? 'concentration-active' : '') + '" title="Concentration" style="flex:none;width:44px;height:44px;margin-right:14px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:' + (p.concentration ? '#a78bfa' : '#6b5a3b') + ';background:' + (p.concentration ? 'rgba(167,139,250,0.18)' : 'transparent') + ';border:1px solid ' + (p.concentration ? 'rgba(167,139,250,0.6)' : 'rgba(196,164,108,0.25)') + '">' + ICON_CONCENTRATION + '</div>' +
+              '<div style="font-size:12px;font-weight:600;color:var(--text-label);text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
+              '<div data-action="toggle-concentration" class="' + (p.concentration ? 'concentration-active' : '') + '" title="Concentration" style="flex:none;width:44px;height:44px;margin-right:14px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:' + (p.concentration ? 'var(--accent-purple-solid)' : 'var(--text-dim)') + ';background:' + (p.concentration ? 'rgba(167,139,250,0.18)' : 'transparent') + ';border:1px solid ' + (p.concentration ? 'rgba(167,139,250,0.6)' : 'rgba(var(--border-tint),0.25)') + '">' + ICON_CONCENTRATION + '</div>' +
             '</div>' +
-            (spellGroupsHtml || '<div style="font-size:12px;color:#6b5a3b">Aucun niveau actif - configurez-les dans les paramètres.</div>') +
+            (spellGroupsHtml || '<div style="font-size:12px;color:var(--text-dim)">Aucun niveau actif - configurez-les dans les paramètres.</div>') +
           '</div>' +
           classHtml +
         '</div>' +
 
-        '<div data-action="open-rest" style="flex:none;height:52px;border-radius:6px;background:#4a3c28;border:1px solid rgba(196,164,108,0.34);color:#efe4cf;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;letter-spacing:0.03em" class="font-cinzel">Repos</div>' +
+        '<div data-action="open-rest" style="flex:none;height:52px;border-radius:6px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;letter-spacing:0.03em" class="font-cinzel">Repos</div>' +
       '</div>'
     );
   }
@@ -409,27 +463,27 @@
     });
 
     var abilitiesHtml = ABILITY_KEYS.map(function (key) {
-      return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:#2b2119;border:1px solid rgba(196,164,108,0.2);border-radius:10px;padding:10px 6px">' +
-        '<div style="font-size:10px;color:#a08d64;text-transform:uppercase;letter-spacing:0.04em">' + ABILITY_LABELS[key] + '</div>' +
-        '<div style="font-size:19px;font-weight:700;color:#f0d9a8" class="font-cinzel">' + formatSigned(p.abilityScores[key]) + '</div>' +
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:10px;padding:10px 6px">' +
+        '<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">' + ABILITY_LABELS[key] + '</div>' +
+        '<div style="font-size:19px;font-weight:700;color:var(--text-gold)" class="font-cinzel">' + formatSigned(p.abilityScores[key]) + '</div>' +
         '</div>';
     }).join('');
 
     var skillsHtml = filteredSkills.length
       ? filteredSkills.map(function (s, i) {
-          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:' + (i % 2 ? '#241a10' : '#2b2119') + ';border-bottom:1px solid rgba(196,164,108,0.14)">' +
-            '<div style="font-size:15px;color:#efe4cf">' + escapeHtml(s.name) + '</div>' +
-            '<div style="font-size:16px;font-weight:700;color:#f0d9a8">' + formatSigned(s.modifier) + '</div>' +
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:' + (i % 2 ? 'var(--bg-card-alt)' : 'var(--bg-card)') + ';border-bottom:1px solid rgba(var(--border-tint),0.14)">' +
+            '<div style="font-size:15px;color:var(--text-main)">' + escapeHtml(s.name) + '</div>' +
+            '<div style="font-size:16px;font-weight:700;color:var(--text-gold)">' + formatSigned(s.modifier) + '</div>' +
             '</div>';
         }).join('')
-      : '<div style="padding:16px;text-align:center;font-size:12px;color:#6b5a3b">Aucune compétence trouvée.</div>';
+      : '<div style="padding:16px;text-align:center;font-size:12px;color:var(--text-dim)">Aucune compétence trouvée.</div>';
 
     return (
       '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Stats</div>' +
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none">' + abilitiesHtml + '</div>' +
-        '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:52px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);border-radius:10px;color:#efe4cf;font-size:16px;padding:0 16px;box-sizing:border-box"/>' +
-        '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' + skillsHtml + '</div>' +
+        '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:52px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);border-radius:10px;color:var(--text-main);font-size:16px;padding:0 16px;box-sizing:border-box"/>' +
+        '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' + skillsHtml + '</div>' +
       '</div>'
     );
   }
@@ -437,25 +491,25 @@
   function renderGrimoire() {
     var sectionsHtml = SPELLBOOK.sections.map(function (section) {
       var rowsHtml = section.spells.map(function (spell, i) {
-        return '<div style="padding:11px 14px;background:' + (i % 2 ? '#241a10' : '#2b2119') + ';border-bottom:1px solid rgba(196,164,108,0.14)">' +
+        return '<div style="padding:11px 14px;background:' + (i % 2 ? 'var(--bg-card-alt)' : 'var(--bg-card)') + ';border-bottom:1px solid rgba(var(--border-tint),0.14)">' +
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
-            '<div style="font-size:14px;font-weight:700;color:#efe4cf;font-family:\'Cinzel\',serif">' + escapeHtml(spell.name) + '</div>' +
+            '<div style="font-size:14px;font-weight:700;color:var(--text-main);font-family:\'Cinzel\',serif">' + escapeHtml(spell.name) + '</div>' +
             '<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px">' +
               '<div style="display:flex;align-items:center;gap:5px">' +
-                '<div style="background:rgba(196,164,108,0.12);border:1px solid rgba(196,164,108,0.32);color:#c9b382;padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap">' + escapeHtml(section.levelTag) + '</div>' +
+                '<div style="background:rgba(var(--border-tint),0.12);border:1px solid rgba(var(--border-tint),0.32);color:var(--text-chip);padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap">' + escapeHtml(section.levelTag) + '</div>' +
                 '<div style="' + spellBadgeStyle(spell.type) + 'padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.03em;white-space:nowrap">' + escapeHtml(spell.type) + '</div>' +
               '</div>' +
-              '<div style="font-size:10px;color:#a08d64;white-space:nowrap">' + escapeHtml(spell.range) + '</div>' +
+              '<div style="font-size:10px;color:var(--text-muted);white-space:nowrap">' + escapeHtml(spell.range) + '</div>' +
             '</div>' +
           '</div>' +
-          '<div style="font-size:12.5px;color:#c9bb9c;margin-top:6px;line-height:1.4">' + escapeHtml(spell.desc) + '</div>' +
-          (spell.note ? '<div style="font-size:11px;color:#8a7a54;font-style:italic;margin-top:4px;line-height:1.3">' + escapeHtml(spell.note) + '</div>' : '') +
+          '<div style="font-size:12.5px;color:var(--text-desc);margin-top:6px;line-height:1.4">' + escapeHtml(spell.desc) + '</div>' +
+          (spell.note ? '<div style="font-size:11px;color:var(--text-note);font-style:italic;margin-top:4px;line-height:1.3">' + escapeHtml(spell.note) + '</div>' : '') +
         '</div>';
       }).join('');
 
       return '<div style="display:flex;flex-direction:column;gap:6px">' +
-        '<div style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">' + escapeHtml(section.title) + '</div>' +
-        '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(196,164,108,0.2)">' + rowsHtml + '</div>' +
+        '<div style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em;font-weight:600">' + escapeHtml(section.title) + '</div>' +
+        '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + rowsHtml + '</div>' +
       '</div>';
     }).join('<div style="height:14px"></div>');
 
@@ -468,7 +522,7 @@
   }
 
   function toggleTrackStyle(enabled) {
-    return 'background:' + (enabled ? '#ef4444' : '#4a3c28') + ';';
+    return 'background:' + (enabled ? '#ef4444' : 'var(--border-strong)') + ';';
   }
   function toggleKnobStyle(enabled) {
     return 'left:' + (enabled ? '19px' : '3px') + ';';
@@ -478,12 +532,12 @@
     var p = profile();
 
     var levelRows = p.spellLevels.map(function (l) {
-      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#2b2119;border-bottom:1px solid rgba(196,164,108,0.14)">' +
-        '<div style="width:56px;font-size:13px;font-weight:600;color:#efe4cf">Niv. ' + l.level + '</div>' +
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg-card);border-bottom:1px solid rgba(var(--border-tint),0.14)">' +
+        '<div style="width:56px;font-size:13px;font-weight:600;color:var(--text-main)">Niv. ' + l.level + '</div>' +
         '<div class="toggle-track" style="' + toggleTrackStyle(l.enabled) + '" data-action="toggle-level" data-level="' + l.level + '"><div class="toggle-knob" style="' + toggleKnobStyle(l.enabled) + '"></div></div>' +
         '<div style="flex:1"></div>' +
-        '<label style="font-size:11px;color:#a08d64">Max</label>' +
-        '<input type="text" inputmode="numeric" pattern="[0-9]*" value="' + l.max + '" ' + (l.enabled ? '' : 'disabled') + ' data-action="level-max" data-level="' + l.level + '" style="width:42px;height:34px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+        '<label style="font-size:11px;color:var(--text-muted)">Max</label>' +
+        '<input type="text" inputmode="numeric" pattern="[0-9]*" value="' + l.max + '" ' + (l.enabled ? '' : 'disabled') + ' data-action="level-max" data-level="' + l.level + '" style="width:42px;height:34px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;text-align:center;box-sizing:border-box"/>' +
         '</div>';
     }).join('');
 
@@ -492,49 +546,57 @@
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Paramètres</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Nom du personnage</label>' +
-          '<input type="text" id="nameInput" value="' + escapeHtml(p.characterName) + '" style="height:44px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);border-radius:10px;color:#efe4cf;font-size:15px;padding:0 12px;box-sizing:border-box"/>' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Nom du personnage</label>' +
+          '<input type="text" id="nameInput" value="' + escapeHtml(p.characterName) + '" style="height:44px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);border-radius:10px;color:var(--text-main);font-size:15px;padding:0 12px;box-sizing:border-box"/>' +
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Emplacements de sorts</label>' +
-          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(196,164,108,0.2)">' + levelRows + '</div>' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Thème</label>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
+            '<div style="font-size:13px;font-weight:600">' + (state.theme === 'light' ? 'Clair (ocre)' : 'Sombre') + '</div>' +
+            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'light') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'light') + '"></div></div>' +
+          '</div>' +
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Ressource de classe</label>' +
-          '<div style="display:flex;flex-direction:column;gap:10px;padding:12px;background:#2b2119;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Emplacements de sorts</label>' +
+          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + levelRows + '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Ressource de classe</label>' +
+          '<div style="display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
             '<div style="display:flex;align-items:center;justify-content:space-between">' +
               '<div style="font-size:13px;font-weight:600">Activer</div>' +
               '<div class="toggle-track" style="' + toggleTrackStyle(p.classResource.enabled) + '" data-action="toggle-class-enabled"><div class="toggle-knob" style="' + toggleKnobStyle(p.classResource.enabled) + '"></div></div>' +
             '</div>' +
             '<div style="display:flex;gap:10px">' +
-              '<input type="text" id="classLabelInput" value="' + escapeHtml(p.classResource.label) + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' placeholder="Libellé (ex. Ki)" style="flex:1;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;padding:0 10px;box-sizing:border-box"/>' +
-              '<input type="text" inputmode="numeric" pattern="[0-9]*" id="classMaxInput" value="' + p.classResource.max + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' style="width:52px;height:40px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+              '<input type="text" id="classLabelInput" value="' + escapeHtml(p.classResource.label) + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' placeholder="Libellé (ex. Ki)" style="flex:1;height:40px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;padding:0 10px;box-sizing:border-box"/>' +
+              '<input type="text" inputmode="numeric" pattern="[0-9]*" id="classMaxInput" value="' + p.classResource.max + '" ' + (p.classResource.enabled ? '' : 'disabled') + ' style="width:52px;height:40px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;text-align:center;box-sizing:border-box"/>' +
             '</div>' +
           '</div>' +
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Caractéristiques</label>' +
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:#2b2119;border-radius:12px;border:1px solid rgba(196,164,108,0.2)">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Caractéristiques</label>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
             ABILITY_KEYS.map(function (key) {
               return '<div style="display:flex;flex-direction:column;gap:4px;min-width:0">' +
-                '<label style="font-size:11px;color:#a08d64;text-align:center">' + ABILITY_LABELS[key] + '</label>' +
-                '<input type="text" inputmode="text" pattern="-?[0-9]*" data-action="ability-input" data-key="' + key + '" value="' + formatSigned(p.abilityScores[key]) + '" style="width:100%;height:44px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:15px;text-align:center;box-sizing:border-box"/>' +
+                '<label style="font-size:11px;color:var(--text-muted);text-align:center">' + ABILITY_LABELS[key] + '</label>' +
+                '<input type="text" inputmode="text" pattern="-?[0-9]*" data-action="ability-input" data-key="' + key + '" value="' + formatSigned(p.abilityScores[key]) + '" style="width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box"/>' +
                 '</div>';
             }).join('') +
           '</div>' +
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<label style="font-size:11px;color:#b8a988;text-transform:uppercase;letter-spacing:0.06em">Compétences</label>' +
-          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(196,164,108,0.2)">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Compétences</label>' +
+          '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' +
             p.skills.map(function (s, idx) {
-              return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#2b2119;border-bottom:1px solid rgba(196,164,108,0.14)">' +
-                '<div style="flex:1;font-size:13px;font-weight:600;color:#efe4cf">' + escapeHtml(s.name) + '</div>' +
+              return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg-card);border-bottom:1px solid rgba(var(--border-tint),0.14)">' +
+                '<div style="flex:1;font-size:13px;font-weight:600;color:var(--text-main)">' + escapeHtml(s.name) + '</div>' +
                 '<div data-action="skill-dec" data-index="' + idx + '" style="flex:none;width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none">&minus;</div>' +
-                '<input type="text" inputmode="text" pattern="-?[0-9]*" data-action="skill-input" data-index="' + idx + '" value="' + formatSigned(s.modifier) + '" style="width:44px;height:36px;background:#171209;border:1px solid rgba(196,164,108,0.24);border-radius:8px;color:#efe4cf;font-size:13px;text-align:center;box-sizing:border-box"/>' +
+                '<input type="text" inputmode="text" pattern="-?[0-9]*" data-action="skill-input" data-index="' + idx + '" value="' + formatSigned(s.modifier) + '" style="width:44px;height:36px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;text-align:center;box-sizing:border-box"/>' +
                 '<div data-action="skill-inc" data-index="' + idx + '" style="flex:none;width:36px;height:36px;border-radius:8px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#22c55e;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none">+</div>' +
                 '</div>';
             }).join('') +
@@ -542,8 +604,8 @@
         '</div>' +
 
         '<div style="display:flex;gap:10px;margin-top:2px;flex:none">' +
-          '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);color:#efe4cf;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
-          '<label style="flex:1;height:46px;border-radius:6px;background:#2b2119;border:1px solid rgba(196,164,108,0.24);color:#efe4cf;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
+          '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
+          '<label style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
             'Importer (JSON)' +
             '<input type="file" accept="application/json" id="importInput" style="display:none"/>' +
           '</label>' +
@@ -565,18 +627,18 @@
     var rowsHtml = rows.map(function (r) {
       var checked = !!checks[r.key];
       return '<div data-action="toggle-rest-check" data-key="' + r.key + '" style="display:flex;align-items:center;gap:10px;height:40px;cursor:pointer">' +
-        '<div style="width:22px;height:22px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:' + (checked ? '#efe4cf' : 'transparent') + ';border:1px solid ' + (checked ? '#efe4cf' : 'rgba(255,255,255,0.25)') + '">' + (checked ? ICON_CHECK : '') + '</div>' +
+        '<div style="width:22px;height:22px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:' + (checked ? 'var(--ink-bright)' : 'transparent') + ';border:1px solid ' + (checked ? 'var(--ink-bright)' : 'var(--checkbox-border-idle)') + '">' + (checked ? ICON_CHECK : '') + '</div>' +
         '<div style="font-size:13px">' + escapeHtml(r.label) + '</div>' +
         '</div>';
     }).join('');
 
     return '<div id="restOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;box-sizing:border-box">' +
-      '<div style="width:100%;max-width:300px;background:#2b2119;border:1px solid rgba(196,164,108,0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">' +
-        '<div style="font-size:17px;font-weight:700;color:#f0d9a8" class="font-cinzel">Repos</div>' +
+      '<div style="width:100%;max-width:300px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">' +
+        '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">Repos</div>' +
         rowsHtml +
         '<div style="display:flex;gap:10px;margin-top:4px">' +
-          '<div data-action="cancel-rest" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(196,164,108,0.34);color:#b8a988;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
-          '<div data-action="confirm-rest" style="flex:1;height:44px;border-radius:6px;background:#efe4cf;border:none;color:#171209;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">Valider</div>' +
+          '<div data-action="cancel-rest" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(var(--border-tint),0.34);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
+          '<div data-action="confirm-rest" style="flex:1;height:44px;border-radius:6px;background:var(--ink-bright);border:none;color:var(--ink-dark);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">Valider</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -698,6 +760,12 @@
     var action = e.currentTarget.getAttribute('data-action');
     switch (action) {
       case 'nav': ui.view = e.currentTarget.getAttribute('data-view'); render(); break;
+
+      case 'toggle-theme':
+        state.theme = state.theme === 'light' ? 'dark' : 'light';
+        applyTheme();
+        saveState(); render();
+        break;
 
       case 'damage': applyDamage(); break;
       case 'heal': applyHeal(); break;
