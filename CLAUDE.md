@@ -33,10 +33,11 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
 
 ### Pages (barre de navigation basse, 4 onglets)
 
-1. **Tracker** (page par défaut) — PV (bloc fusionné avec bouclier temporaire), emplacements de
-   sorts groupés par niveau en badges circulaires, ressource(s) de classe (un bloc de badges par
-   ressource configurée, voir Paramètres ci-dessous), marqueur de concentration, bouton "Repos"
-   unique.
+1. **Tracker** (page par défaut) — nom du personnage, ligne de 3 tuiles CA / Initiative /
+   Déplacement (`profile.combatStats: { ac, initiative, speed }`, lecture seule, éditées dans
+   Paramètres), PV (bloc fusionné avec bouclier temporaire), emplacements de sorts groupés par
+   niveau en badges circulaires, ressource(s) de classe (un bloc de badges par ressource
+   configurée, voir Paramètres ci-dessous), marqueur de concentration, bouton "Repos" unique.
 2. **Stats** — caractéristiques (6) et compétences (18, D&D 5e, noms français) en lecture
    seule, avec champ de recherche filtrant la liste en direct. Les valeurs sont saisies
    manuellement dans Paramètres (l'app ne calcule aucun modificateur).
@@ -61,8 +62,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    filtres actifs se combinent en OR (`spellMatchesGrimoireFilters()`) ; aucun filtre actif =
    tout afficher. L'état (`ui.grimoireFilters`, éphémère) est conservé en changeant d'onglet de
    niveau puisqu'il n'est jamais réinitialisé par `renderGrimoire()`/`grimoireStep()`.
-4. **Paramètres** — nom du personnage, config des emplacements de sorts et des ressources de
-   classe, saisie des caractéristiques/compétences, export/import JSON.
+4. **Paramètres** — nom du personnage, CA/Initiative/Déplacement (`data-action="combat-input"`,
+   Initiative signée via `formatSigned()`, CA/Déplacement non signés), config des emplacements de
+   sorts et des ressources de classe, saisie des caractéristiques/compétences, export/import JSON.
    Les emplacements de sorts s'activent dans l'ordre croissant : impossible d'activer un niveau
    si un niveau inférieur est désactivé (message d'erreur `ui.settingsLevelError`, pas
    d'auto-activation en cascade). Désactiver un niveau qui a des niveaux supérieurs actifs ouvre

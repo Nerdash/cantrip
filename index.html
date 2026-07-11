@@ -157,6 +157,7 @@
     return {
       characterName: 'Mon Personnage',
       hp: { current: 10, max: 10, temp: 0 },
+      combatStats: { ac: 10, initiative: 0, speed: 9 },
       spellLevels: makeSpellLevels(),
       classResources: [],
       concentration: false,
@@ -166,6 +167,10 @@
   }
 
   function sanitizeProfile(p) {
+    if (!p.combatStats || typeof p.combatStats !== 'object') p.combatStats = { ac: 10, initiative: 0, speed: 9 };
+    if (typeof p.combatStats.ac !== 'number' || isNaN(p.combatStats.ac)) p.combatStats.ac = 10;
+    if (typeof p.combatStats.initiative !== 'number' || isNaN(p.combatStats.initiative)) p.combatStats.initiative = 0;
+    if (typeof p.combatStats.speed !== 'number' || isNaN(p.combatStats.speed)) p.combatStats.speed = 9;
     if (!p.abilityScores || typeof p.abilityScores !== 'object') p.abilityScores = makeAbilityScores();
     ABILITY_KEYS.forEach(function (k) {
       if (typeof p.abilityScores[k] !== 'number' || isNaN(p.abilityScores[k])) p.abilityScores[k] = 0;
@@ -454,9 +459,22 @@
         '</div>';
     }).join('<div style="height:10px"></div>');
 
+    var combatStatsHtml = [
+      { label: 'CA', value: p.combatStats.ac },
+      { label: 'Initiative', value: formatSigned(p.combatStats.initiative) },
+      { label: 'Déplacement', value: p.combatStats.speed + 'm' }
+    ].map(function (stat) {
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:10px;padding:7px 6px">' +
+        '<div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">' + stat.label + '</div>' +
+        '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">' + stat.value + '</div>' +
+        '</div>';
+    }).join('');
+
     return (
       '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + escapeHtml(p.characterName) + '</div>' +
+
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none">' + combatStatsHtml + '</div>' +
 
         '<div style="background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:16px">' +
           '<div data-action="damage" style="flex:none;width:80px;height:76px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
@@ -670,6 +688,24 @@
         '</div>' +
 
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Combat</label>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
+            '<div style="display:flex;flex-direction:column;gap:4px;min-width:0">' +
+              '<label style="font-size:11px;color:var(--text-muted);text-align:center">CA</label>' +
+              '<input type="text" inputmode="numeric" pattern="[0-9]*" data-action="combat-input" data-key="ac" value="' + p.combatStats.ac + '" style="width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box"/>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:4px;min-width:0">' +
+              '<label style="font-size:11px;color:var(--text-muted);text-align:center">Initiative</label>' +
+              '<input type="text" inputmode="text" pattern="-?[0-9]*" data-action="combat-input" data-key="initiative" value="' + formatSigned(p.combatStats.initiative) + '" style="width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box"/>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:4px;min-width:0">' +
+              '<label style="font-size:11px;color:var(--text-muted);text-align:center">Déplacement (m)</label>' +
+              '<input type="text" inputmode="numeric" pattern="[0-9]*" data-action="combat-input" data-key="speed" value="' + p.combatStats.speed + '" style="width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box"/>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
             '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
             '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
@@ -868,6 +904,17 @@
         var key = el.getAttribute('data-key');
         var scores = profile().abilityScores;
         scores[key] = clamp(toInt(el.value, scores[key]), -99, 99);
+        saveState();
+        render();
+      });
+    });
+
+    app.querySelectorAll('[data-action="combat-input"]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var key = el.getAttribute('data-key');
+        var stats = profile().combatStats;
+        var min = key === 'initiative' ? -99 : 0;
+        stats[key] = clamp(toInt(el.value, stats[key]), min, 99);
         saveState();
         render();
       });
@@ -1138,6 +1185,10 @@
       if (!data.classResource || typeof data.classResource.enabled !== 'boolean' || typeof data.classResource.max !== 'number' || !Array.isArray(data.classResource.used)) return false;
     } else {
       return false;
+    }
+    if (data.combatStats !== undefined) {
+      if (typeof data.combatStats !== 'object' || !data.combatStats) return false;
+      if (typeof data.combatStats.ac !== 'number' || typeof data.combatStats.initiative !== 'number' || typeof data.combatStats.speed !== 'number') return false;
     }
     if (data.abilityScores !== undefined) {
       if (typeof data.abilityScores !== 'object' || !data.abilityScores) return false;
