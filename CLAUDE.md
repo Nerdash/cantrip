@@ -1,4 +1,4 @@
-# JDR Tracker — Suivi de Personnage
+# Cantrip — Suivi de Personnage JDR
 
 PWA de suivi de personnage JDR (PV, emplacements de sorts, ressource de classe, fiche
 Stats/Skills, Grimoire) construite en juillet 2026. Le propriétaire travaille alternativement
@@ -11,7 +11,9 @@ complément du dépôt Git qui est la seule source de vérité partagée entre l
 - Tailwind CSS via CDN (`<script src="https://cdn.tailwindcss.com">`) — utilisé de façon
   marginale, la majorité du style est en `style=""` inline directement dans les templates JS.
 - Police Cinzel (Google Fonts) via `class="font-cinzel"`.
-- Persistance : `localStorage`, clé `jdr_character_tracker_state`. Pas de backend.
+- Persistance : `localStorage`, clé `jdr_character_tracker_state` (conservée telle quelle après
+  le renommage de l'app en Cantrip, pour ne pas perdre les sauvegardes existantes). Pas de
+  backend.
 - PWA : `manifest.json` + `icon.svg` + `sw.js` (service worker, stratégie réseau d'abord avec
   fallback cache — voir section Service Worker ci-dessous).
 
@@ -132,14 +134,14 @@ Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`them
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`jdr-tracker-v5` au 2026-07-11) — **incrémenter cette constante à chaque changement
+versionné (`cantrip-v20` au 2026-07-12) — **incrémenter cette constante à chaque changement
 significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`) pour forcer
 l'invalidation du cache côté client.
 
 ## Déploiement
 
-- Dépôt : https://github.com/Nerdash/jdr-suivi-pj (public, compte GitHub "Nerdash")
-- App en ligne (GitHub Pages, HTTPS, installable en PWA) : https://nerdash.github.io/jdr-suivi-pj/
+- Dépôt : https://github.com/Nerdash/cantrip (public, compte GitHub "Nerdash")
+- App en ligne (GitHub Pages, HTTPS, installable en PWA) : https://nerdash.github.io/cantrip/
 - Déploiement automatique : push sur `master` → GitHub Pages sert directement `index.html` à la
   racine (pas de pipeline CI, pas de dossier `dist`).
 - `.nojekyll` présent pour désactiver le traitement Jekyll par GitHub Pages.

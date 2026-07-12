@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jdr-tracker-v19';
+const CACHE_NAME = 'cantrip-v20';
 const CORE_ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (event) => {

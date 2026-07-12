@@ -1,7 +1,7 @@
 {
-  "name": "Suivi de Personnage JDR",
-  "short_name": "Suivi PJ",
-  "description": "Suivi des PV, emplacements de sorts et ressources de classe pour vos parties de JDR.",
+  "name": "Cantrip",
+  "short_name": "Cantrip",
+  "description": "Cantrip, l'app de suivi de personnage pour vos parties de JDR : PV, emplacements de sorts et ressources de classe.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
