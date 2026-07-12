@@ -15,36 +15,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
-    --bg-gradient-1: #211a12;
-    --bg-gradient-2: #171209;
-    --bg-deep: #171209;
-    --bg-card: #2b2119;
-    --bg-card-alt: #241a10;
-    --bg-nav: #1c160e;
-    --border-strong: #4a3c28;
-    --border-tint: 196,164,108;
-    --border-card: rgba(var(--border-tint), 0.2);
-    --text-main: #efe4cf;
-    --text-gold: #f0d9a8;
-    --text-label: #b8a988;
-    --text-muted: #a08d64;
-    --text-dim: #6b5a3b;
-    --text-desc: #c9bb9c;
-    --text-note: #8a7a54;
-    --text-chip: #c9b382;
-    --accent-red-text: #fca5a5;
-    --accent-green-text: #86efac;
-    --accent-blue-text: #7dd3fc;
-    --accent-purple-text: #c4b5fd;
-    --accent-purple-solid: #a78bfa;
-    --accent-gray-text: #cbd5e1;
-    --accent-gold-badge-text: #e0c890;
-    --bg-texture: rgba(255,255,255,0.012);
-    --checkbox-border-idle: rgba(255,255,255,0.25);
-    --ink-bright: #efe4cf;
-    --ink-dark: #171209;
-  }
-  :root[data-theme="light"] {
     --bg-gradient-1: #f6ecd2;
     --bg-gradient-2: #ecdcb0;
     --bg-deep: #e2cd9c;
@@ -53,6 +23,7 @@
     --bg-nav: #e6d4a2;
     --border-strong: #8a6a3a;
     --border-tint: 122,90,42;
+    --border-card: rgba(var(--border-tint), 0.2);
     --text-main: #3a2a15;
     --text-gold: #8a5a16;
     --text-label: #7a6440;
@@ -70,6 +41,35 @@
     --accent-gold-badge-text: #7c4a12;
     --bg-texture: rgba(90,60,20,0.035);
     --checkbox-border-idle: rgba(58,42,21,0.3);
+    --ink-bright: #efe4cf;
+    --ink-dark: #171209;
+  }
+  :root[data-theme="deneor"] {
+    --bg-gradient-1: #1a3327;
+    --bg-gradient-2: #0d1b15;
+    --bg-deep: #0a1712;
+    --bg-card: #173224;
+    --bg-card-alt: #12281c;
+    --bg-nav: #0f2018;
+    --border-strong: #154734;
+    --border-tint: 90,170,130;
+    --text-main: #e7f1ea;
+    --text-gold: #e6c988;
+    --text-label: #a9c9b4;
+    --text-muted: #8caf9b;
+    --text-dim: #4f6f5c;
+    --text-desc: #cfe2d5;
+    --text-note: #83a692;
+    --text-chip: #bcd6c4;
+    --accent-red-text: #fca5a5;
+    --accent-green-text: #86efac;
+    --accent-blue-text: #7dd3fc;
+    --accent-purple-text: #c4b5fd;
+    --accent-purple-solid: #a78bfa;
+    --accent-gray-text: #cbd5e1;
+    --accent-gold-badge-text: #e0c890;
+    --bg-texture: rgba(255,255,255,0.012);
+    --checkbox-border-idle: rgba(255,255,255,0.25);
   }
   html, body {
     height: 100%;
@@ -245,16 +245,16 @@
 
   var CHARACTER_ORDER = ['calix', 'deneor'];
 
-  function makeCharacter(id, name, subtitle, level, portrait) {
+  function makeCharacter(id, name, subtitle, level, portrait, theme) {
     var p = defaultProfile();
     p.characterName = name;
-    return { id: id, name: name, subtitle: subtitle, level: level, portrait: portrait, savedProfile: p };
+    return { id: id, name: name, subtitle: subtitle, level: level, portrait: portrait, theme: theme, savedProfile: p };
   }
 
   function defaultCharacters() {
     return {
-      calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg'),
-      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png')
+      calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg', 'calix'),
+      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png', 'deneor')
     };
   }
 
@@ -264,7 +264,6 @@
       version: 2,
       activeProfileIndex: 0,
       profiles: [cloneDeep(characters.calix.savedProfile)],
-      theme: 'light',
       activeCharacterId: 'calix',
       characters: characters
     };
@@ -278,7 +277,7 @@
       var parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
       parsed.profiles.forEach(sanitizeProfile);
-      if (parsed.theme !== 'light' && parsed.theme !== 'dark') parsed.theme = 'light';
+      delete parsed.theme;
 
       var defaults = defaultCharacters();
       if (!parsed.characters || typeof parsed.characters !== 'object') {
@@ -293,6 +292,7 @@
           if (typeof c.subtitle !== 'string') c.subtitle = defaults[id].subtitle;
           if (typeof c.level !== 'number') c.level = defaults[id].level;
           if (typeof c.portrait !== 'string') c.portrait = defaults[id].portrait;
+          if (c.theme !== 'calix' && c.theme !== 'deneor') c.theme = defaults[id].theme;
           if (!c.savedProfile || typeof c.savedProfile !== 'object') c.savedProfile = defaults[id].savedProfile;
           else sanitizeProfile(c.savedProfile);
         });
@@ -310,10 +310,18 @@
     } catch (e) { /* localStorage unavailable or full: state stays in memory only */ }
   }
 
+  var THEME_COLOR_META = { calix: '#ecdcb0', deneor: '#0a1712' };
+
+  function activeTheme() {
+    var character = state.characters[state.activeCharacterId];
+    return (character && character.theme) || 'calix';
+  }
+
   function applyTheme() {
-    document.documentElement.setAttribute('data-theme', state.theme);
+    var theme = activeTheme();
+    document.documentElement.setAttribute('data-theme', theme);
     var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) themeColorMeta.setAttribute('content', state.theme === 'light' ? '#ecdcb0' : '#171209');
+    if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_COLOR_META[theme] || THEME_COLOR_META.calix);
   }
 
   var state = loadState();
@@ -532,6 +540,7 @@
   function renderTracker() {
     var p = profile();
     var hp = p.hp;
+    var activeCharacter = state.characters[state.activeCharacterId];
 
     var maxHtml = ui.editingMax
       ? '<input id="hpMaxInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + hp.max + '" style="width:60px;font-size:19px;color:var(--text-main);background:transparent;border:none;border-bottom:1px solid #ef4444;outline:none;padding:0"/>'
@@ -582,7 +591,10 @@
     return (
       '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-          '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + escapeHtml(p.characterName) + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">' +
+            (activeCharacter && activeCharacter.portrait ? '<img src="' + escapeHtml(activeCharacter.portrait) + '" alt="" style="flex:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid rgba(var(--border-tint),0.35)"/>' : '') +
+            '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" class="font-cinzel">' + escapeHtml(p.characterName) + '</div>' +
+          '</div>' +
           '<div style="display:flex;align-items:center;gap:10px;flex:none">' +
             '<div data-action="toggle-inspiration" title="Point d\'inspiration" style="flex:none;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:' + (p.inspiration ? 'var(--accent-gold-badge-text)' : 'var(--text-dim)') + ';background:' + (p.inspiration ? 'rgba(234,179,8,0.18)' : 'transparent') + ';border:1px solid ' + (p.inspiration ? 'rgba(234,179,8,0.6)' : 'rgba(var(--border-tint),0.25)') + '">' + iconStar(p.inspiration) + '</div>' +
             '<div data-action="toggle-concentration" class="' + (p.concentration ? 'concentration-active' : '') + '" title="Concentration" style="flex:none;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:' + (p.concentration ? 'var(--accent-purple-solid)' : 'var(--text-dim)') + ';background:' + (p.concentration ? 'rgba(167,139,250,0.18)' : 'transparent') + ';border:1px solid ' + (p.concentration ? 'rgba(167,139,250,0.6)' : 'rgba(var(--border-tint),0.25)') + '">' + ICON_CONCENTRATION + '</div>' +
@@ -943,14 +955,6 @@
   }
 
   function renderSettingsApp() {
-    var themeBlock =
-        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
-            '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
-            '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
-          '</div>' +
-        '</div>';
-
     var saveBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Sauvegarde</label>' +
@@ -960,7 +964,6 @@
     return (
       '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
         renderSettingsHeader("Paramétrer l'application") +
-        themeBlock +
         saveBlock +
       '</div>'
     );
@@ -1255,12 +1258,6 @@
     switch (action) {
       case 'nav': ui.view = e.currentTarget.getAttribute('data-view'); render(); break;
 
-      case 'toggle-theme':
-        state.theme = state.theme === 'light' ? 'dark' : 'light';
-        applyTheme();
-        saveState(); render();
-        break;
-
       case 'damage': applyDamage(); break;
       case 'heal': applyHeal(); break;
 
@@ -1398,6 +1395,7 @@
         var characterToLoad = state.characters[loadId];
         state.profiles[state.activeProfileIndex] = cloneDeep(characterToLoad.savedProfile);
         state.activeCharacterId = loadId;
+        applyTheme();
         ui.characterUpdateNotice = null;
         ui.view = 'tracker';
         saveState(); render();

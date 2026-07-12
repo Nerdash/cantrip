@@ -39,7 +39,8 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
 
 ### Pages (barre de navigation basse, 4 onglets)
 
-1. **Tracker** (page par défaut) — nom du personnage, ligne de 3 tuiles CA / Initiative /
+1. **Tracker** (page par défaut) — portrait du personnage actif (`state.characters[activeCharacterId]
+   .portrait`, cercle 38px) à gauche du nom, ligne de 3 tuiles CA / Initiative /
    Déplacement (`profile.combatStats: { ac, initiative, speed }`, lecture seule, éditées dans
    Paramètres), PV (bloc fusionné avec bouclier temporaire), emplacements de sorts groupés par
    niveau en badges circulaires, ressource(s) de classe (un bloc de badges par ressource
@@ -117,19 +118,21 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      réservé pour un futur sélecteur de mode de lancer de sorts (connus / préparés) — la logique
      de préparation elle-même n'est pas développée, voir "Reste à faire" plus bas.
    - **Paramétrer l'application** (`renderSettingsApp()`, volontairement pas nommée "profil" —
-     ce terme désigne déjà le personnage, `state.profile`/`state.profiles[]`) — toggle « Activer
-     le thème sombre » (voir section Thème clair/sombre plus bas) puis rubrique "Sauvegarde" qui
-     ne contient plus qu'un bouton "Charger un personnage" (`data-action="nav" data-view=
-     "settings-load-character"`) — plus d'export/import JSON, voir section Personnages ci-dessous.
+     ce terme désigne déjà le personnage, `state.profile`/`state.profiles[]`) — ne contient plus
+     qu'une rubrique "Sauvegarde" avec un bouton "Charger un personnage" (`data-action="nav"
+     data-view="settings-load-character"`) — plus d'export/import JSON, voir section Personnages
+     ci-dessous. Plus de toggle de thème ici : le thème suit désormais le personnage chargé, voir
+     section Thèmes (Calix / Deneor) plus bas.
 
 ## Personnages (Calix / Deneor)
 
 Système à **deux emplacements de personnage fixes** (pas de CRUD générique, pas d'ajout/suppression
 de personnage) : `state.characters` est un objet `{ calix: {...}, deneor: {...} }`, chaque entrée
-`{ id, name, subtitle, level, portrait, savedProfile }` où `savedProfile` est un instantané complet
-d'un profil (même forme que `defaultProfile()`). `state.activeCharacterId` (`'calix'` | `'deneor'`)
-indique lequel des deux est actuellement **chargé**. `CHARACTER_ORDER = ['calix', 'deneor']` fixe
-l'ordre d'affichage.
+`{ id, name, subtitle, level, portrait, theme, savedProfile }` où `savedProfile` est un instantané
+complet d'un profil (même forme que `defaultProfile()`) et `theme` (`'calix'` | `'deneor'`) est le
+thème visuel associé à ce personnage (voir section Thèmes (Calix / Deneor) plus bas).
+`state.activeCharacterId` (`'calix'` | `'deneor'`) indique lequel des deux est actuellement
+**chargé**. `CHARACTER_ORDER = ['calix', 'deneor']` fixe l'ordre d'affichage.
 
 Le profil réellement affiché/édité dans toute l'app reste `state.profiles[state.activeProfileIndex]`
 (inchangé, lu via `profile()`) : c'est une **copie de travail**, distincte des instantanés
@@ -149,7 +152,9 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
   Deux boutons en bas :
   - **Charger ce personnage** (`data-action="load-character"`) — toujours actif : clone
     `character.savedProfile` dans `state.profiles[state.activeProfileIndex]`, bascule
-    `state.activeCharacterId`, puis renvoie directement sur le Tracker (`ui.view = 'tracker'`).
+    `state.activeCharacterId`, applique le thème du personnage (`applyTheme()`, voir section
+    Thèmes (Calix / Deneor) plus bas), puis renvoie directement sur le Tracker (`ui.view =
+    'tracker'`).
   - **Mettre à jour le personnage** (`data-action="update-character"`) — clone le profil de
     travail actuel (`profile()`) dans `character.savedProfile`, ce qui en fait les nouvelles
     valeurs par défaut de ce personnage. **Grisé/non cliquable** (`pointer-events:none`) tant que
@@ -184,25 +189,32 @@ révisé"). En cas de divergence, les arbitrages suivants ont été retenus :
   `focusin` sur `#app`, tape directement pour remplacer la valeur), **sauf** le champ de
   recherche des compétences (`#statsSearchInput`) qui reste un filtre en direct.
 
-## Thème clair/sombre
+## Thèmes (Calix / Deneor)
 
-L'app supporte un thème clair "ocre/parchemin" (par défaut, pas blanc, pour garder l'aspect
-médiéval) et un thème sombre, basculable dans Paramètres → Paramétrer l'application via un unique
-toggle « Activer le thème sombre » (`data-action="toggle-theme"`). Persisté dans `state.theme` (`'dark'` | `'light'`,
-défaut `'light'` dans `defaultState()` et dans le fallback de `loadState()`) — si l'utilisateur
-active le thème sombre, ce choix est conservé entre les sessions comme n'importe quelle valeur de
-`state`. Le thème est appliqué via l'attribut `data-theme` sur `<html>` (`applyTheme()`), qui
-pilote un jeu de variables CSS custom properties définies dans `:root` / `:root[data-theme="light"]`
-(fonds, bordures, textes, couleurs d'accent des badges). **Toute nouvelle couleur ajoutée dans un
-template JS doit utiliser `var(--...)` plutôt qu'un hex en dur** pour rester compatible avec les
-deux thèmes — voir le bloc `<style>` en tête de fichier pour la liste des variables disponibles.
+Il n'y a plus de toggle clair/sombre manuel : le thème visuel est une propriété de chaque
+personnage (`state.characters[id].theme`, `'calix'` | `'deneor'`) et s'applique automatiquement
+au chargement de ce personnage (`applyTheme()`, appelé au démarrage depuis `loadState()`/
+`defaultState()` et lors de l'action `data-action="load-character"`). `activeTheme()` lit
+`state.characters[state.activeCharacterId].theme` (repli sur `'calix'` si absent) ;
+`applyTheme()` pose cette valeur sur l'attribut `data-theme` de `<html>` et met à jour le
+`<meta name="theme-color">` via la table `THEME_COLOR_META`.
+- **Thème Calix** (`:root`, valeurs par défaut sans attribut) — ocre/parchemin clair, hérité de
+  l'ancien thème clair unique (pas blanc, pour garder l'aspect médiéval).
+- **Thème Deneor** (`:root[data-theme="deneor"]`) — palette sombre vert forêt construite autour
+  de Pantone 3435 C (`#154734`, utilisé comme `--border-strong`), cohérente avec le thème de
+  Paladin sous le Serment des Anciens de Deneor Sentariel.
+Les deux jeux de variables CSS custom properties (fonds, bordures, textes, couleurs d'accent des
+badges) sont définis en tête de fichier dans le bloc `<style>`. **Toute nouvelle couleur ajoutée
+dans un template JS doit utiliser `var(--...)` plutôt qu'un hex en dur** pour rester compatible
+avec les deux thèmes.
 Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`theme_color` dans
-`manifest.json` reflètent la teinte claire par défaut (`#ecdcb0`).
+`manifest.json` reflètent la teinte Calix par défaut (`#ecdcb0`), puisque Calix reste le
+personnage chargé par défaut sur un état vierge.
 
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`cantrip-v31` au 2026-07-12) — **incrémenter cette constante à chaque changement
+versionné (`cantrip-v32` au 2026-07-12) — **incrémenter cette constante à chaque changement
 significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`,
 `characters/*.jpg|png`) pour forcer l'invalidation du cache côté client.
 
