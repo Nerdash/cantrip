@@ -120,9 +120,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    - **Paramétrer l'application** (`renderSettingsApp()`, volontairement pas nommée "profil" —
      ce terme désigne déjà le personnage, `state.profile`/`state.profiles[]`) — ne contient plus
      qu'une rubrique "Sauvegarde" avec un bouton "Charger un personnage" (`data-action="nav"
-     data-view="settings-load-character"`) — plus d'export/import JSON, voir section Personnages
-     ci-dessous. Plus de toggle de thème ici : le thème suit désormais le personnage chargé, voir
-     section Thèmes (Calix / Deneor) plus bas.
+     data-view="settings-load-character"`), qui donne accès à l'export/import JSON par personnage,
+     voir section Personnages ci-dessous. Plus de toggle de thème ici : le thème suit désormais le
+     personnage chargé, voir section Thèmes (Calix / Deneor) plus bas.
 
 ## Personnages (Calix / Deneor)
 
@@ -159,9 +159,29 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
     travail actuel (`profile()`) dans `character.savedProfile`, ce qui en fait les nouvelles
     valeurs par défaut de ce personnage. **Grisé/non cliquable** (`pointer-events:none`) tant que
     ce personnage n'est pas celui actuellement chargé (`state.activeCharacterId !== charId`) —
-    impossible de mettre à jour un personnage sans l'avoir chargé au préalable. Un message
-    transitoire ("Personnage mis à jour.") s'affiche après coup (`ui.characterUpdateNotice`,
-    effacé au moindre changement d'onglet du carrousel).
+    impossible de mettre à jour un personnage sans l'avoir chargé au préalable.
+  Un message transitoire (`ui.characterNotice = { id, text }`, propre au personnage affiché dans
+  le carrousel) s'affiche après une mise à jour ou un import réussis ("Personnage mis à jour." /
+  "Personnage importé."), effacé au moindre changement d'onglet du carrousel.
+  Sous ces deux boutons, un bloc "Sauvegarde JSON de {nom}" propose l'export/import du **profil
+  complet** du personnage affiché (indépendamment de `state.activeCharacterId` — export/import
+  fonctionnent aussi bien sur le personnage chargé que sur l'autre) :
+  - **Exporter** (`data-action="export-character"`, fonction `exportCharacterJson()`) — sérialise
+    `character.savedProfile` en JSON (`JSON.stringify(..., null, 2)`) et déclenche un téléchargement
+    via un `<a download>` éphémère (`cantrip-{charId}.json`). Aucun appel réseau, tout se passe
+    côté client via un `Blob`/`URL.createObjectURL`.
+  - **Importer** (`data-action="import-character"`, fonction `importCharacterJson()`) — ouvre un
+    `<input type="file">` créé dynamiquement (pas de champ persistant dans le template, pour éviter
+    qu'il ne soit détruit au prochain re-render), lit le fichier via `FileReader`, `JSON.parse` puis
+    `sanitizeProfile()` (qui comble maintenant aussi `hp`, `characterName`, `concentration`,
+    `inspiration` et `spellLevels` en plus des champs déjà couverts, pour encaisser un JSON
+    partiel/corrompu — c'est le seul point d'entrée de données externes non fiables de l'app) avant
+    d'écraser `character.savedProfile`. Si le personnage importé est celui actuellement chargé
+    (`state.activeCharacterId === charId`), la copie de travail (`state.profiles[
+    state.activeProfileIndex]`) est aussi mise à jour immédiatement pour que le Tracker reflète le
+    changement sans repasser par "Charger ce personnage". En cas de JSON invalide, message d'erreur
+    transitoire (`ui.characterImportError`, même durée de vie que `ui.characterNotice`) sans toucher
+    à l'état existant.
   Tant que le contenu du Grimoire reste codé en dur dans `SPELLBOOK` (Calix uniquement, voir
   section Grimoire plus haut), charger Deneor ne change pas l'onglet Grimoire — sa gestion propre
   reste à faire (voir "Reste à faire" plus bas).
@@ -214,7 +234,7 @@ personnage chargé par défaut sur un état vierge.
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`cantrip-v32` au 2026-07-12) — **incrémenter cette constante à chaque changement
+versionné (`cantrip-v33` au 2026-07-12) — **incrémenter cette constante à chaque changement
 significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`,
 `characters/*.jpg|png`) pour forcer l'invalidation du cache côté client.
 

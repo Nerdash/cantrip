@@ -199,6 +199,27 @@
   }
 
   function sanitizeProfile(p) {
+    if (typeof p.characterName !== 'string' || !p.characterName) p.characterName = 'Mon Personnage';
+    if (typeof p.concentration !== 'boolean') p.concentration = false;
+    if (typeof p.inspiration !== 'boolean') p.inspiration = false;
+    if (!p.hp || typeof p.hp !== 'object') p.hp = { current: 10, max: 10, temp: 0 };
+    if (typeof p.hp.max !== 'number' || isNaN(p.hp.max)) p.hp.max = 10;
+    p.hp.max = clamp(p.hp.max, 0, 999);
+    if (typeof p.hp.current !== 'number' || isNaN(p.hp.current)) p.hp.current = p.hp.max;
+    p.hp.current = clamp(p.hp.current, 0, p.hp.max);
+    if (typeof p.hp.temp !== 'number' || isNaN(p.hp.temp)) p.hp.temp = 0;
+    p.hp.temp = clamp(p.hp.temp, 0, 999);
+    if (!Array.isArray(p.spellLevels) || p.spellLevels.length !== 9) {
+      p.spellLevels = makeSpellLevels();
+    } else {
+      p.spellLevels.forEach(function (l, i) {
+        if (typeof l.level !== 'number') l.level = i + 1;
+        if (typeof l.enabled !== 'boolean') l.enabled = false;
+        if (typeof l.max !== 'number' || isNaN(l.max)) l.max = 0;
+        l.max = clamp(l.max, 0, 12);
+        l.used = resizeUsedArray(l.used, l.max);
+      });
+    }
     if (!p.combatStats || typeof p.combatStats !== 'object') p.combatStats = { ac: 10, initiative: 0, speed: 9 };
     if (typeof p.combatStats.ac !== 'number' || isNaN(p.combatStats.ac)) p.combatStats.ac = 10;
     if (typeof p.combatStats.initiative !== 'number' || isNaN(p.combatStats.initiative)) p.combatStats.initiative = 0;
@@ -342,7 +363,8 @@
     disableLevelDialog: null, // { level: number } quand la confirmation de désactivation est ouverte
     characterCarouselIndex: 0, // index dans CHARACTER_ORDER, propre à l'écran "Charger un personnage"
     characterCarouselAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderSettingsLoadCharacter()
-    characterUpdateNotice: null // id du personnage qui vient d'être mis à jour (message transitoire)
+    characterNotice: null, // { id, text } — message transitoire (mise à jour / import réussis), propre au personnage affiché
+    characterImportError: null // message d'erreur transitoire si le JSON importé est invalide
   };
 
   function profile() { return state.profiles[state.activeProfileIndex]; }
@@ -992,7 +1014,8 @@
           '<div style="font-size:13px;color:var(--text-muted)">' + escapeHtml(character.subtitle) + (typeof character.level === 'number' ? ' · Niveau ' + character.level : '') + '</div>' +
           (isActive ? '<div style="margin-top:4px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-gold);background:rgba(var(--border-tint),0.18);border:1px solid rgba(var(--border-tint),0.4);padding:3px 10px;border-radius:10px">Personnage chargé</div>' : '') +
         '</div>' +
-        (ui.characterUpdateNotice === charId ? '<div style="font-size:12px;color:var(--accent-green-text)">Personnage mis à jour.</div>' : '') +
+        (ui.characterNotice && ui.characterNotice.id === charId ? '<div style="font-size:12px;color:var(--accent-green-text)">' + escapeHtml(ui.characterNotice.text) + '</div>' : '') +
+        (ui.characterImportError ? '<div style="font-size:12px;color:#ef4444">' + escapeHtml(ui.characterImportError) + '</div>' : '') +
       '</div>';
 
     var navArrowsHtml =
@@ -1011,6 +1034,14 @@
           '<div data-action="load-character" data-id="' + charId + '" style="height:48px;border-radius:10px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center" class="font-cinzel">Charger ce personnage</div>' +
           '<div data-action="update-character" data-id="' + charId + '" style="height:44px;border-radius:10px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:' + (updateDisabled ? 'var(--text-dim)' : 'var(--text-main)') + ';font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;' + (updateDisabled ? 'opacity:0.45;pointer-events:none;' : 'cursor:pointer;') + '">Mettre à jour le personnage</div>' +
           (updateDisabled ? '<div style="font-size:11px;color:var(--text-dim);text-align:center">Chargez ce personnage avant de pouvoir le mettre à jour.</div>' : '') +
+        '</div>' +
+        SETTINGS_SEPARATOR +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Sauvegarde JSON de ' + escapeHtml(character.name) + '</label>' +
+          '<div style="display:flex;gap:10px">' +
+            '<div data-action="export-character" data-id="' + charId + '" style="flex:1;height:44px;border-radius:10px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter</div>' +
+            '<div data-action="import-character" data-id="' + charId + '" style="flex:1;height:44px;border-radius:10px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Importer</div>' +
+          '</div>' +
         '</div>' +
       '</div>'
     );
@@ -1249,8 +1280,59 @@
     if (newIdx === ui.characterCarouselIndex) return;
     ui.characterCarouselAnimDirection = delta > 0 ? 'next' : 'prev';
     ui.characterCarouselIndex = newIdx;
-    ui.characterUpdateNotice = null;
+    ui.characterNotice = null;
+    ui.characterImportError = null;
     render();
+  }
+
+  function exportCharacterJson(charId) {
+    var character = state.characters[charId];
+    if (!character) return;
+    var dataStr = JSON.stringify(character.savedProfile, null, 2);
+    var blob = new Blob([dataStr], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'cantrip-' + charId + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importCharacterJson(charId) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      document.body.removeChild(input);
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var parsed = JSON.parse(String(reader.result));
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('invalid');
+          sanitizeProfile(parsed);
+          state.characters[charId].savedProfile = parsed;
+          if (state.activeCharacterId === charId) {
+            state.profiles[state.activeProfileIndex] = cloneDeep(parsed);
+          }
+          ui.characterImportError = null;
+          ui.characterNotice = { id: charId, text: 'Personnage importé.' };
+          saveState();
+          render();
+        } catch (e) {
+          ui.characterNotice = null;
+          ui.characterImportError = 'Fichier JSON invalide.';
+          render();
+        }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
   }
 
   function onAction(e) {
@@ -1396,7 +1478,8 @@
         state.profiles[state.activeProfileIndex] = cloneDeep(characterToLoad.savedProfile);
         state.activeCharacterId = loadId;
         applyTheme();
-        ui.characterUpdateNotice = null;
+        ui.characterNotice = null;
+        ui.characterImportError = null;
         ui.view = 'tracker';
         saveState(); render();
         break;
@@ -1405,9 +1488,18 @@
         var updateId = e.currentTarget.getAttribute('data-id');
         if (state.activeCharacterId === updateId) {
           state.characters[updateId].savedProfile = cloneDeep(profile());
-          ui.characterUpdateNotice = updateId;
+          ui.characterNotice = { id: updateId, text: 'Personnage mis à jour.' };
+          ui.characterImportError = null;
           saveState(); render();
         }
+        break;
+      }
+      case 'export-character': {
+        exportCharacterJson(e.currentTarget.getAttribute('data-id'));
+        break;
+      }
+      case 'import-character': {
+        importCharacterJson(e.currentTarget.getAttribute('data-id'));
         break;
       }
 
