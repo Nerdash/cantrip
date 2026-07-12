@@ -265,7 +265,7 @@
 
   // ---- ephemeral UI state (not persisted) ----
   var ui = {
-    view: 'tracker', // 'tracker' | 'stats' | 'grimoire' | 'settings'
+    view: 'tracker', // 'tracker' | 'stats' | 'grimoire' | 'settings' | 'settings-character' | 'settings-grimoire' | 'settings-app'
     editingMax: false,
     editingTemp: false,
     shortRestOpen: false,
@@ -327,6 +327,12 @@
   }
   function iconResized(svg, size) {
     return svg.replace(/width="\d+"/, 'width="' + size + '"').replace(/height="\d+"/, 'height="' + size + '"');
+  }
+  function iconArrowLeft() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>';
+  }
+  function iconChevronRight() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
   }
 
   // ---- grimoire (Calix Noctavel) ----
@@ -425,13 +431,16 @@
       case 'stats': return renderStats();
       case 'grimoire': return renderGrimoire();
       case 'settings': return renderSettings();
+      case 'settings-character': return renderSettingsCharacter();
+      case 'settings-grimoire': return renderSettingsGrimoire();
+      case 'settings-app': return renderSettingsApp();
       default: return renderTracker();
     }
   }
 
   function renderBottomNav() {
     var itemsHtml = PAGES.map(function (page) {
-      var active = ui.view === page.view;
+      var active = page.view === 'settings' ? ui.view.indexOf('settings') === 0 : ui.view === page.view;
       return '<div data-action="nav" data-view="' + page.view + '" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;cursor:pointer;color:' + (active ? 'var(--text-gold)' : 'var(--text-dim)') + '">' +
         page.icon(active) +
         '<div style="font-size:10px;font-weight:600;letter-spacing:0.02em">' + page.label + '</div>' +
@@ -716,6 +725,36 @@
   }
 
   function renderSettings() {
+    var menuItems = [
+      { view: 'settings-character', label: 'Paramétrer le Personnage' },
+      { view: 'settings-grimoire', label: 'Paramétrer le Grimoire' },
+      { view: 'settings-app', label: "Paramétrer l'application" }
+    ];
+    var itemsHtml = menuItems.map(function (item) {
+      return '<div data-action="nav" data-view="' + item.view + '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:12px;cursor:pointer;color:var(--text-main)">' +
+        '<div style="font-size:15px;font-weight:600">' + item.label + '</div>' +
+        iconChevronRight() +
+        '</div>';
+    }).join('');
+
+    return (
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
+        '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Paramètres</div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' + itemsHtml + '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderSettingsHeader(title) {
+    return '<div style="display:flex;align-items:center;gap:10px;flex:none">' +
+      '<div data-action="nav" data-view="settings" style="flex:none;width:36px;height:36px;border-radius:8px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-main)">' + iconArrowLeft() + '</div>' +
+      '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + title + '</div>' +
+    '</div>';
+  }
+
+  var SETTINGS_SEPARATOR = '<hr style="border:none;border-top:1px solid rgba(var(--border-tint),0.15);margin:0;flex:none"/>';
+
+  function renderSettingsCharacter() {
     var p = profile();
 
     var levelRows = p.spellLevels.map(function (l, idx) {
@@ -739,15 +778,13 @@
         '</div>';
     }).join('');
 
-    return (
-      '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
-        '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Paramètres</div>' +
-
+    var nameBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Nom du personnage</label>' +
           '<input type="text" id="nameInput" value="' + escapeHtml(p.characterName) + '" style="height:44px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);border-radius:10px;color:var(--text-main);font-size:15px;padding:0 12px;box-sizing:border-box"/>' +
-        '</div>' +
+        '</div>';
 
+    var combatBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Combat</label>' +
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
@@ -764,22 +801,25 @@
               '<input type="text" inputmode="numeric" pattern="[0-9]*" data-action="combat-input" data-key="speed" value="' + p.combatStats.speed + '" style="width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box"/>' +
             '</div>' +
           '</div>' +
-        '</div>' +
+        '</div>';
 
+    var spellLevelsBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Emplacements de sorts</label>' +
           '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + levelRows + '</div>' +
           (ui.settingsLevelError ? '<div style="font-size:11px;color:#ef4444">' + escapeHtml(ui.settingsLevelError) + '</div>' : '') +
-        '</div>' +
+        '</div>';
 
+    var classResourcesBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Ressource(s) de classe</label>' +
           (p.classResources.length
             ? '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + classResourceRows + '</div>'
             : '') +
           '<div data-action="add-class-resource" style="height:44px;border-radius:10px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">+ Ajouter une ressource</div>' +
-        '</div>' +
+        '</div>';
 
+    var abilitiesBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Caractéristiques</label>' +
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
@@ -790,8 +830,9 @@
                 '</div>';
             }).join('') +
           '</div>' +
-        '</div>' +
+        '</div>';
 
+    var savingThrowsBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Jets de sauvegarde</label>' +
           '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
@@ -802,8 +843,9 @@
                 '</div>';
             }).join('') +
           '</div>' +
-        '</div>' +
+        '</div>';
 
+    var skillsBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Compétences</label>' +
           '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' +
@@ -816,15 +858,41 @@
                 '</div>';
             }).join('') +
           '</div>' +
-        '</div>' +
+        '</div>';
 
+    var blocks = [nameBlock, combatBlock, spellLevelsBlock, classResourcesBlock, abilitiesBlock, savingThrowsBlock, skillsBlock];
+
+    return (
+      '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
+        renderSettingsHeader('Paramétrer le Personnage') +
+        blocks.join(SETTINGS_SEPARATOR) +
+      '</div>'
+    );
+  }
+
+  function renderSettingsGrimoire() {
+    return (
+      '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
+        renderSettingsHeader('Paramétrer le Grimoire') +
+        '<div style="font-size:12px;color:var(--text-dim);line-height:1.4">Le contenu du Grimoire de Calix Noctavel est actuellement fixe et non éditable.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
+          '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Mode de lancer de sorts</label>' +
+          '<div style="padding:14px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);border-radius:12px;color:var(--text-dim);font-size:13px;text-align:center">À venir (sorts connus / préparés)</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderSettingsApp() {
+    var themeBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' +
             '<div style="font-size:13px;font-weight:600">Activer le thème sombre</div>' +
             '<div class="toggle-track" style="' + toggleTrackStyle(state.theme === 'dark') + '" data-action="toggle-theme"><div class="toggle-knob" style="' + toggleKnobStyle(state.theme === 'dark') + '"></div></div>' +
           '</div>' +
-        '</div>' +
+        '</div>';
 
+    var saveBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Sauvegarde</label>' +
           '<div style="display:flex;gap:10px">' +
@@ -835,7 +903,13 @@
             '</label>' +
           '</div>' +
           (ui.importError ? '<div style="flex:none;font-size:12px;color:#ef4444;text-align:center">' + escapeHtml(ui.importError) + '</div>' : '') +
-        '</div>' +
+        '</div>';
+
+    return (
+      '<div data-scroll-root style="display:flex;flex-direction:column;height:100%;gap:14px;overflow-y:auto">' +
+        renderSettingsHeader("Paramétrer l'application") +
+        themeBlock +
+        saveBlock +
       '</div>'
     );
   }

@@ -27,7 +27,8 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
 - `ui` : état éphémère non persisté (page active, champs en cours d'édition, recherche...).
   Voir `ui.view` pour la page courante.
 - `render()` : dispatch vers `renderTracker()` / `renderStats()` / `renderGrimoire()` /
-  `renderSettings()` selon `ui.view`, puis ajoute `renderBottomNav()`. Chaque page occupe toute
+  `renderSettings()` (menu Paramètres) / `renderSettingsCharacter()` / `renderSettingsGrimoire()` /
+  `renderSettingsApp()` selon `ui.view`, puis ajoute `renderBottomNav()`. Chaque page occupe toute
   la hauteur disponible (`height:100%`, pas de scroll de la page globale — seuls les conteneurs
   `[data-scroll-root]` scrollent en interne).
 - `bindEvents()` : re-attache tous les event listeners après chaque re-render (délégation via
@@ -75,29 +76,47 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    filtres actifs se combinent en OR (`spellMatchesGrimoireFilters()`) ; aucun filtre actif =
    tout afficher. L'état (`ui.grimoireFilters`, éphémère) est conservé en changeant d'onglet de
    niveau puisqu'il n'est jamais réinitialisé par `renderGrimoire()`/`grimoireStep()`.
-4. **Paramètres** — nom du personnage, CA/Initiative/Déplacement (`data-action="combat-input"`,
-   Initiative signée via `formatSigned()`, CA/Déplacement non signés), config des emplacements de
-   sorts et des ressources de classe, saisie des caractéristiques/compétences. Le toggle « Activer
-   le thème sombre » et la rubrique "Sauvegarde" (export/import JSON) sont en bas de page, dans
-   cet ordre (thème puis Sauvegarde) — voir section Thème clair/sombre plus bas.
-   Les emplacements de sorts s'activent dans l'ordre croissant : impossible d'activer un niveau
-   si un niveau inférieur est désactivé (message d'erreur `ui.settingsLevelError`, pas
-   d'auto-activation en cascade). Désactiver un niveau qui a des niveaux supérieurs actifs ouvre
-   une dialog de confirmation (`ui.disableLevelDialog`) car ces niveaux supérieurs seront
-   désactivés en cascade ; désactiver le niveau actif le plus haut ne demande pas de
-   confirmation.
-   **Ressource(s) de classe** : `profile.classResources` est un tableau (0..n éléments, pas de
-   limite) d'objets `{ id, label, max, used[] }` — chacun avec son propre libellé et son propre
-   nombre d'emplacements, éditables en ligne dans Paramètres (`data-action="class-resource-label"`
-   / `"class-resource-max"`), plus un bouton "+ Ajouter une ressource"
-   (`data-action="add-class-resource"`, crée via `makeClassResource()`/`generateId()`) et un
-   bouton de suppression par ligne (`data-action="remove-class-resource"`). Il n'y a plus de
-   notion d'« activer » : une ressource existe dans le tableau ou n'existe pas. La modale Repos
-   réinitialise tous les `used[]` de `classResources` d'un coup (case "Ressource(s) de classe").
-   `sanitizeProfile()` migre automatiquement l'ancien format mono-ressource
-   (`profile.classResource: { enabled, label, max, used }`) vers `classResources` au chargement
-   et à l'import JSON — les deux formats sont acceptés par `isValidProfile()` pour la
-   rétrocompatibilité des sauvegardes exportées avant ce changement.
+4. **Paramètres** — depuis juillet 2026, `renderSettings()` n'affiche plus qu'un menu de trois
+   boutons (`data-action="nav"`, réutilise le pattern générique de navigation) qui renvoient
+   chacun vers une sous-page dédiée. Chaque sous-page a son propre `view` (`settings-character` /
+   `settings-grimoire` / `settings-app`) et affiche en haut un bouton retour
+   (`renderSettingsHeader()`) qui repositionne `ui.view = 'settings'` (retour au menu, pas au
+   Tracker). Dans la barre de navigation basse, l'onglet Paramètres reste en surbrillance tant
+   que `ui.view` commence par `"settings"` (menu ou n'importe quelle sous-page). Pas de
+   multi-personnage à ce stade : cette restructuration reste mono-profil (pas de sélecteur de
+   personnage, pas de changement de la structure de `state`).
+   - **Paramétrer le Personnage** (`renderSettingsCharacter()`) — nom du personnage,
+     CA/Initiative/Déplacement (`data-action="combat-input"`, Initiative signée via
+     `formatSigned()`, CA/Déplacement non signés), config des emplacements de sorts et des
+     ressources de classe, saisie des caractéristiques/compétences. Contenu en flux continu, sans
+     titres de sous-section, séparé par de simples `<hr>` légers (`SETTINGS_SEPARATOR`) entre les
+     blocs.
+     Les emplacements de sorts s'activent dans l'ordre croissant : impossible d'activer un niveau
+     si un niveau inférieur est désactivé (message d'erreur `ui.settingsLevelError`, pas
+     d'auto-activation en cascade). Désactiver un niveau qui a des niveaux supérieurs actifs ouvre
+     une dialog de confirmation (`ui.disableLevelDialog`) car ces niveaux supérieurs seront
+     désactivés en cascade ; désactiver le niveau actif le plus haut ne demande pas de
+     confirmation.
+     **Ressource(s) de classe** : `profile.classResources` est un tableau (0..n éléments, pas de
+     limite) d'objets `{ id, label, max, used[] }` — chacun avec son propre libellé et son propre
+     nombre d'emplacements, éditables en ligne (`data-action="class-resource-label"` /
+     `"class-resource-max"`), plus un bouton "+ Ajouter une ressource"
+     (`data-action="add-class-resource"`, crée via `makeClassResource()`/`generateId()`) et un
+     bouton de suppression par ligne (`data-action="remove-class-resource"`). Il n'y a plus de
+     notion d'« activer » : une ressource existe dans le tableau ou n'existe pas. La modale Repos
+     réinitialise tous les `used[]` de `classResources` d'un coup (case "Ressource(s) de classe").
+     `sanitizeProfile()` migre automatiquement l'ancien format mono-ressource
+     (`profile.classResource: { enabled, label, max, used }`) vers `classResources` au chargement
+     et à l'import JSON — les deux formats sont acceptés par `isValidProfile()` pour la
+     rétrocompatibilité des sauvegardes exportées avant ce changement.
+   - **Paramétrer le Grimoire** (`renderSettingsGrimoire()`) — le contenu du personnage Calix
+     (`SPELLBOOK`) reste inchangé et non éditable ici. Contient uniquement un emplacement UI
+     réservé pour un futur sélecteur de mode de lancer de sorts (connus / préparés) — la logique
+     de préparation elle-même n'est pas développée, voir "Reste à faire" plus bas.
+   - **Paramétrer l'application** (`renderSettingsApp()`, volontairement pas nommée "profil" —
+     ce terme désigne déjà le personnage, `state.profile`/`state.profiles[]`) — toggle « Activer
+     le thème sombre » et rubrique "Sauvegarde" (export/import JSON), dans cet ordre — voir
+     section Thème clair/sombre plus bas.
 
 ## Décisions de conception (à respecter, divergent parfois du cahier des charges)
 
@@ -121,8 +140,8 @@ révisé"). En cas de divergence, les arbitrages suivants ont été retenus :
 ## Thème clair/sombre
 
 L'app supporte un thème clair "ocre/parchemin" (par défaut, pas blanc, pour garder l'aspect
-médiéval) et un thème sombre, basculable dans Paramètres via un unique toggle « Activer le thème
-sombre » (`data-action="toggle-theme"`). Persisté dans `state.theme` (`'dark'` | `'light'`,
+médiéval) et un thème sombre, basculable dans Paramètres → Paramétrer l'application via un unique
+toggle « Activer le thème sombre » (`data-action="toggle-theme"`). Persisté dans `state.theme` (`'dark'` | `'light'`,
 défaut `'light'` dans `defaultState()` et dans le fallback de `loadState()`) — si l'utilisateur
 active le thème sombre, ce choix est conservé entre les sessions comme n'importe quelle valeur de
 `state`. Le thème est appliqué via l'attribut `data-theme` sur `<html>` (`applyTheme()`), qui
@@ -136,7 +155,7 @@ Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`them
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`cantrip-v20` au 2026-07-12) — **incrémenter cette constante à chaque changement
+versionné (`cantrip-v30` au 2026-07-12) — **incrémenter cette constante à chaque changement
 significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`) pour forcer
 l'invalidation du cache côté client.
 
