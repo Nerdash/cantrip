@@ -1,7 +1,7 @@
 # Cantrip — Suivi de Personnage JDR
 
 PWA de suivi de personnage JDR (PV, emplacements de sorts, ressource de classe, fiche
-Stats/Skills, Grimoire) construite en juillet 2026. Le propriétaire travaille alternativement
+Personnage/Skills, Grimoire) construite en juillet 2026. Le propriétaire travaille alternativement
 sur deux PC (fixe et portable) : ce fichier sert de mémoire portable entre les deux, en
 complément du dépôt Git qui est la seule source de vérité partagée entre les machines.
 
@@ -46,9 +46,11 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
    pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
    violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
-2. **Stats** — caractéristiques (6) et compétences (18, D&D 5e, noms français) en lecture
-   seule, avec champ de recherche filtrant la liste en direct. Les valeurs sont saisies
-   manuellement dans Paramètres (l'app ne calcule aucun modificateur).
+2. **Personnage** (onglet nav, anciennement "Stats" ; le code interne — `renderStats()`,
+   `ui.statsSearch`, `view: 'stats'` — garde le nom `stats`) — caractéristiques (6) et
+   compétences (18, D&D 5e, noms français) en lecture seule, avec champ de recherche filtrant
+   la liste en direct. Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
+   aucun modificateur).
 3. **Grimoire** — affiche les capacités du personnage (sorts par niveau + capacités de classe et
    dons), regroupées par section avec badge de type d'action coloré (Action/Bonus/Réaction/
    Rituel/Passif...), niveau, portée/durée et note d'usage en italique. Contenu **statique,
