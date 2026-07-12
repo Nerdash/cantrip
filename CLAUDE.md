@@ -16,6 +16,9 @@ complément du dépôt Git qui est la seule source de vérité partagée entre l
   backend.
 - PWA : `manifest.json` + `icon.svg` + `sw.js` (service worker, stratégie réseau d'abord avec
   fallback cache — voir section Service Worker ci-dessous).
+- Portraits des personnages : `characters/calix.jpg` + `characters/deneor.png`, fichiers statiques
+  (pas de base64 inline) référencés depuis `state.characters.*.portrait` — voir section
+  Personnages ci-dessous.
 
 ## Structure du code (`index.html`)
 
@@ -28,9 +31,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
   Voir `ui.view` pour la page courante.
 - `render()` : dispatch vers `renderTracker()` / `renderStats()` / `renderGrimoire()` /
   `renderSettings()` (menu Paramètres) / `renderSettingsCharacter()` / `renderSettingsGrimoire()` /
-  `renderSettingsApp()` selon `ui.view`, puis ajoute `renderBottomNav()`. Chaque page occupe toute
-  la hauteur disponible (`height:100%`, pas de scroll de la page globale — seuls les conteneurs
-  `[data-scroll-root]` scrollent en interne).
+  `renderSettingsApp()` / `renderSettingsLoadCharacter()` selon `ui.view`, puis ajoute
+  `renderBottomNav()`. Chaque page occupe toute la hauteur disponible (`height:100%`, pas de
+  scroll de la page globale — seuls les conteneurs `[data-scroll-root]` scrollent en interne).
 - `bindEvents()` : re-attache tous les event listeners après chaque re-render (délégation via
   `data-action` sur les éléments cliquables).
 
@@ -41,9 +44,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    Paramètres), PV (bloc fusionné avec bouclier temporaire), emplacements de sorts groupés par
    niveau en badges circulaires, ressource(s) de classe (un bloc de badges par ressource
    configurée, voir Paramètres ci-dessous), bouton "Repos" unique.
-   Deux marqueurs toggle (`profile.concentration`, `profile.inspiration`, booléens indépendants,
-   non validés/sanitizés à l'import comme le reste du profil) alignés à droite sur la ligne du nom
-   du personnage, dans l'ordre inspiration puis concentration : point d'inspiration (icône étoile
+   Deux marqueurs toggle (`profile.concentration`, `profile.inspiration`, booléens indépendants)
+   alignés à droite sur la ligne du nom du personnage, dans l'ordre inspiration puis
+   concentration : point d'inspiration (icône étoile
    `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
    pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
    violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
@@ -106,17 +109,61 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      notion d'« activer » : une ressource existe dans le tableau ou n'existe pas. La modale Repos
      réinitialise tous les `used[]` de `classResources` d'un coup (case "Ressource(s) de classe").
      `sanitizeProfile()` migre automatiquement l'ancien format mono-ressource
-     (`profile.classResource: { enabled, label, max, used }`) vers `classResources` au chargement
-     et à l'import JSON — les deux formats sont acceptés par `isValidProfile()` pour la
-     rétrocompatibilité des sauvegardes exportées avant ce changement.
+     (`profile.classResource: { enabled, label, max, used }`) vers `classResources` — appliqué à
+     chaque chargement, aussi bien au profil actif (`state.profiles[]`) qu'aux instantanés
+     `savedProfile` de chaque personnage (voir section Personnages ci-dessous).
    - **Paramétrer le Grimoire** (`renderSettingsGrimoire()`) — le contenu du personnage Calix
      (`SPELLBOOK`) reste inchangé et non éditable ici. Contient uniquement un emplacement UI
      réservé pour un futur sélecteur de mode de lancer de sorts (connus / préparés) — la logique
      de préparation elle-même n'est pas développée, voir "Reste à faire" plus bas.
    - **Paramétrer l'application** (`renderSettingsApp()`, volontairement pas nommée "profil" —
      ce terme désigne déjà le personnage, `state.profile`/`state.profiles[]`) — toggle « Activer
-     le thème sombre » et rubrique "Sauvegarde" (export/import JSON), dans cet ordre — voir
-     section Thème clair/sombre plus bas.
+     le thème sombre » (voir section Thème clair/sombre plus bas) puis rubrique "Sauvegarde" qui
+     ne contient plus qu'un bouton "Charger un personnage" (`data-action="nav" data-view=
+     "settings-load-character"`) — plus d'export/import JSON, voir section Personnages ci-dessous.
+
+## Personnages (Calix / Deneor)
+
+Système à **deux emplacements de personnage fixes** (pas de CRUD générique, pas d'ajout/suppression
+de personnage) : `state.characters` est un objet `{ calix: {...}, deneor: {...} }`, chaque entrée
+`{ id, name, subtitle, level, portrait, savedProfile }` où `savedProfile` est un instantané complet
+d'un profil (même forme que `defaultProfile()`). `state.activeCharacterId` (`'calix'` | `'deneor'`)
+indique lequel des deux est actuellement **chargé**. `CHARACTER_ORDER = ['calix', 'deneor']` fixe
+l'ordre d'affichage.
+
+Le profil réellement affiché/édité dans toute l'app reste `state.profiles[state.activeProfileIndex]`
+(inchangé, lu via `profile()`) : c'est une **copie de travail**, distincte des instantanés
+`savedProfile`. Les deux ne sont jamais le même objet en mémoire (clonage systématique via
+`cloneDeep()`, un round-trip JSON) pour permettre un aller-retour explicite :
+
+- **Charger un personnage** (`renderSettingsLoadCharacter()`, `view: 'settings-load-character'`,
+  accessible depuis Paramétrer l'application) — carrousel plein écran (un personnage affiché à la
+  fois, portrait + nom + sous-titre + niveau si défini) avec navigation par flèches
+  (`data-action="character-carousel-step"`) ou swipe horizontal sur `#characterCarouselSwipe`.
+  Le swipe est **volontairement lent à détecter** (`bindEvents()` exige un glissé d'au moins
+  400ms en plus du seuil de distance habituel — un flick rapide est ignoré) et l'animation de
+  transition (`character-anim-next`/`-prev`, 900ms) est nettement plus lente que celle du Grimoire
+  (420ms), pour un effet de feuilletage posé plutôt qu'un changement d'onglet classique. Un badge
+  "Personnage chargé" s'affiche sur la carte si `state.activeCharacterId` correspond au personnage
+  affiché.
+  Deux boutons en bas :
+  - **Charger ce personnage** (`data-action="load-character"`) — toujours actif : clone
+    `character.savedProfile` dans `state.profiles[state.activeProfileIndex]`, bascule
+    `state.activeCharacterId`, puis renvoie directement sur le Tracker (`ui.view = 'tracker'`).
+  - **Mettre à jour le personnage** (`data-action="update-character"`) — clone le profil de
+    travail actuel (`profile()`) dans `character.savedProfile`, ce qui en fait les nouvelles
+    valeurs par défaut de ce personnage. **Grisé/non cliquable** (`pointer-events:none`) tant que
+    ce personnage n'est pas celui actuellement chargé (`state.activeCharacterId !== charId`) —
+    impossible de mettre à jour un personnage sans l'avoir chargé au préalable. Un message
+    transitoire ("Personnage mis à jour.") s'affiche après coup (`ui.characterUpdateNotice`,
+    effacé au moindre changement d'onglet du carrousel).
+  Tant que le contenu du Grimoire reste codé en dur dans `SPELLBOOK` (Calix uniquement, voir
+  section Grimoire plus haut), charger Deneor ne change pas l'onglet Grimoire — sa gestion propre
+  reste à faire (voir "Reste à faire" plus bas).
+
+`loadState()` migre automatiquement toute sauvegarde antérieure à ce système (`parsed.characters`
+absent) : le profil unique existant devient l'instantané de Calix (aucune perte de données) et
+Deneor démarre sur un `defaultProfile()` vierge ; `activeCharacterId` est alors mis à `'calix'`.
 
 ## Décisions de conception (à respecter, divergent parfois du cahier des charges)
 
@@ -155,9 +202,9 @@ Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`them
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est
-versionné (`cantrip-v30` au 2026-07-12) — **incrémenter cette constante à chaque changement
-significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`) pour forcer
-l'invalidation du cache côté client.
+versionné (`cantrip-v31` au 2026-07-12) — **incrémenter cette constante à chaque changement
+significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`,
+`characters/*.jpg|png`) pour forcer l'invalidation du cache côté client.
 
 ## Déploiement
 
@@ -183,8 +230,10 @@ toute nouvelle machine avant de committer.
 
 ## Reste à faire / pistes non traitées
 
-- Grimoire : gestion générique (CRUD, multi-personnage) si besoin au-delà du contenu statique
-  actuel de Calix Noctavel — voir section Grimoire plus haut.
+- Grimoire de Deneor : contenu encore non implémenté (`SPELLBOOK` reste toujours celui de Calix,
+  quel que soit le personnage chargé) — voir section Grimoire et section Personnages plus haut.
+- Personnages : système actuellement limité à deux emplacements fixes (Calix/Deneor), pas de CRUD
+  générique (ajout/suppression d'un personnage) — voir section Personnages plus haut.
 - Génération d'un `.apk` installable : voie recommandée — passer l'URL GitHub Pages dans
   PWABuilder.com pour générer un APK signé sans installer Android Studio.
 - Icône et animation de concentration : validées visuellement mais pourraient encore évoluer

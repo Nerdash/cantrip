@@ -123,6 +123,16 @@
   }
   .grimoire-anim-next { animation: grimoire-slide-next 420ms ease-out; }
   .grimoire-anim-prev { animation: grimoire-slide-prev 420ms ease-out; }
+  @keyframes character-slide-next {
+    from { opacity: 0; transform: translateX(60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes character-slide-prev {
+    from { opacity: 0; transform: translateX(-60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .character-anim-next { animation: character-slide-next 900ms ease-in-out; }
+  .character-anim-prev { animation: character-slide-prev 900ms ease-in-out; }
 </style>
 </head>
 <body>
@@ -132,6 +142,10 @@
   'use strict';
 
   var STORAGE_KEY = 'jdr_character_tracker_state';
+
+  function cloneDeep(x) {
+    return JSON.parse(JSON.stringify(x));
+  }
 
   function makeSpellLevels() {
     var levels = [];
@@ -229,8 +243,31 @@
     return p;
   }
 
+  var CHARACTER_ORDER = ['calix', 'deneor'];
+
+  function makeCharacter(id, name, subtitle, level, portrait) {
+    var p = defaultProfile();
+    p.characterName = name;
+    return { id: id, name: name, subtitle: subtitle, level: level, portrait: portrait, savedProfile: p };
+  }
+
+  function defaultCharacters() {
+    return {
+      calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg'),
+      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png')
+    };
+  }
+
   function defaultState() {
-    return { version: 1, activeProfileIndex: 0, profiles: [defaultProfile()], theme: 'light' };
+    var characters = defaultCharacters();
+    return {
+      version: 2,
+      activeProfileIndex: 0,
+      profiles: [cloneDeep(characters.calix.savedProfile)],
+      theme: 'light',
+      activeCharacterId: 'calix',
+      characters: characters
+    };
   }
 
   // ---- persistence ----
@@ -242,6 +279,25 @@
       if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return defaultState();
       parsed.profiles.forEach(sanitizeProfile);
       if (parsed.theme !== 'light' && parsed.theme !== 'dark') parsed.theme = 'light';
+
+      var defaults = defaultCharacters();
+      if (!parsed.characters || typeof parsed.characters !== 'object') {
+        defaults.calix.savedProfile = cloneDeep(parsed.profiles[0]);
+        parsed.characters = defaults;
+      } else {
+        CHARACTER_ORDER.forEach(function (id) {
+          var c = parsed.characters[id];
+          if (!c || typeof c !== 'object') { parsed.characters[id] = defaults[id]; return; }
+          c.id = id;
+          if (typeof c.name !== 'string') c.name = defaults[id].name;
+          if (typeof c.subtitle !== 'string') c.subtitle = defaults[id].subtitle;
+          if (typeof c.level !== 'number') c.level = defaults[id].level;
+          if (typeof c.portrait !== 'string') c.portrait = defaults[id].portrait;
+          if (!c.savedProfile || typeof c.savedProfile !== 'object') c.savedProfile = defaults[id].savedProfile;
+          else sanitizeProfile(c.savedProfile);
+        });
+      }
+      if (parsed.activeCharacterId !== 'calix' && parsed.activeCharacterId !== 'deneor') parsed.activeCharacterId = 'calix';
       return parsed;
     } catch (e) {
       return defaultState();
@@ -265,18 +321,20 @@
 
   // ---- ephemeral UI state (not persisted) ----
   var ui = {
-    view: 'tracker', // 'tracker' | 'stats' | 'grimoire' | 'settings' | 'settings-character' | 'settings-grimoire' | 'settings-app'
+    view: 'tracker', // 'tracker' | 'stats' | 'grimoire' | 'settings' | 'settings-character' | 'settings-grimoire' | 'settings-app' | 'settings-load-character'
     editingMax: false,
     editingTemp: false,
     shortRestOpen: false,
     shortRestChecks: { hp: false, spells: false, tempHp: false, classResource: false },
-    importError: '',
     statsSearch: '',
     grimoireTab: 0, // niveau numérique (0..9) ou 'classe'
     grimoireAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderGrimoire()
     grimoireFilters: { action: false, bonus: false, reaction: false }, // conservés entre les onglets de niveau
     settingsLevelError: '',
-    disableLevelDialog: null // { level: number } quand la confirmation de désactivation est ouverte
+    disableLevelDialog: null, // { level: number } quand la confirmation de désactivation est ouverte
+    characterCarouselIndex: 0, // index dans CHARACTER_ORDER, propre à l'écran "Charger un personnage"
+    characterCarouselAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderSettingsLoadCharacter()
+    characterUpdateNotice: null // id du personnage qui vient d'être mis à jour (message transitoire)
   };
 
   function profile() { return state.profiles[state.activeProfileIndex]; }
@@ -434,6 +492,7 @@
       case 'settings-character': return renderSettingsCharacter();
       case 'settings-grimoire': return renderSettingsGrimoire();
       case 'settings-app': return renderSettingsApp();
+      case 'settings-load-character': return renderSettingsLoadCharacter();
       default: return renderTracker();
     }
   }
@@ -895,14 +954,7 @@
     var saveBlock =
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
           '<label style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em">Sauvegarde</label>' +
-          '<div style="display:flex;gap:10px">' +
-            '<div data-action="export-json" style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Exporter (JSON)</div>' +
-            '<label style="flex:1;height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">' +
-              'Importer (JSON)' +
-              '<input type="file" accept="application/json" id="importInput" style="display:none"/>' +
-            '</label>' +
-          '</div>' +
-          (ui.importError ? '<div style="flex:none;font-size:12px;color:#ef4444;text-align:center">' + escapeHtml(ui.importError) + '</div>' : '') +
+          '<div data-action="nav" data-view="settings-load-character" style="height:46px;border-radius:6px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Charger un personnage</div>' +
         '</div>';
 
     return (
@@ -910,6 +962,53 @@
         renderSettingsHeader("Paramétrer l'application") +
         themeBlock +
         saveBlock +
+      '</div>'
+    );
+  }
+
+  function renderSettingsLoadCharacter() {
+    var animDirection = ui.characterCarouselAnimDirection;
+    ui.characterCarouselAnimDirection = null;
+
+    var idx = clamp(ui.characterCarouselIndex, 0, CHARACTER_ORDER.length - 1);
+    ui.characterCarouselIndex = idx;
+    var charId = CHARACTER_ORDER[idx];
+    var character = state.characters[charId];
+    var isActive = state.activeCharacterId === charId;
+    var updateDisabled = !isActive;
+
+    var dotsHtml = CHARACTER_ORDER.map(function (id, i) {
+      return '<div style="width:8px;height:8px;border-radius:50%;background:' + (i === idx ? 'var(--text-gold)' : 'rgba(var(--border-tint),0.35)') + '"></div>';
+    }).join('');
+
+    var cardHtml =
+      '<div id="characterCarouselSwipe" data-scroll-root class="' + (animDirection === 'next' ? 'character-anim-next' : animDirection === 'prev' ? 'character-anim-prev' : '') + '" style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow-y:auto;padding:8px 0">' +
+        '<img src="' + escapeHtml(character.portrait) + '" alt="' + escapeHtml(character.name) + '" style="width:180px;height:180px;object-fit:cover;border-radius:16px;border:1px solid rgba(var(--border-tint),0.3);box-shadow:0 4px 18px rgba(0,0,0,0.25)"/>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">' +
+          '<div style="font-size:20px;font-weight:700;letter-spacing:0.3px" class="font-cinzel">' + escapeHtml(character.name) + '</div>' +
+          '<div style="font-size:13px;color:var(--text-muted)">' + escapeHtml(character.subtitle) + (typeof character.level === 'number' ? ' · Niveau ' + character.level : '') + '</div>' +
+          (isActive ? '<div style="margin-top:4px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-gold);background:rgba(var(--border-tint),0.18);border:1px solid rgba(var(--border-tint),0.4);padding:3px 10px;border-radius:10px">Personnage chargé</div>' : '') +
+        '</div>' +
+        (ui.characterUpdateNotice === charId ? '<div style="font-size:12px;color:var(--accent-green-text)">Personnage mis à jour.</div>' : '') +
+      '</div>';
+
+    var navArrowsHtml =
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex:none">' +
+        '<div data-action="character-carousel-step" data-delta="-1" style="flex:none;width:36px;height:36px;border-radius:8px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);display:flex;align-items:center;justify-content:center;color:var(--text-main);' + (idx === 0 ? 'opacity:0.35;pointer-events:none;' : 'cursor:pointer;') + '">' + iconArrowLeft() + '</div>' +
+        '<div style="display:flex;gap:6px">' + dotsHtml + '</div>' +
+        '<div data-action="character-carousel-step" data-delta="1" style="flex:none;width:36px;height:36px;border-radius:8px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);display:flex;align-items:center;justify-content:center;color:var(--text-main);transform:scaleX(-1);' + (idx === CHARACTER_ORDER.length - 1 ? 'opacity:0.35;pointer-events:none;' : 'cursor:pointer;') + '">' + iconArrowLeft() + '</div>' +
+      '</div>';
+
+    return (
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
+        renderSettingsHeader('Charger un personnage', 'settings-app') +
+        cardHtml +
+        navArrowsHtml +
+        '<div style="display:flex;flex-direction:column;gap:10px;flex:none">' +
+          '<div data-action="load-character" data-id="' + charId + '" style="height:48px;border-radius:10px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center" class="font-cinzel">Charger ce personnage</div>' +
+          '<div data-action="update-character" data-id="' + charId + '" style="height:44px;border-radius:10px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:' + (updateDisabled ? 'var(--text-dim)' : 'var(--text-main)') + ';font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;' + (updateDisabled ? 'opacity:0.45;pointer-events:none;' : 'cursor:pointer;') + '">Mettre à jour le personnage</div>' +
+          (updateDisabled ? '<div style="font-size:11px;color:var(--text-dim);text-align:center">Chargez ce personnage avant de pouvoir le mettre à jour.</div>' : '') +
+        '</div>' +
       '</div>'
     );
   }
@@ -1031,11 +1130,6 @@
       });
     });
 
-    var importInput = document.getElementById('importInput');
-    if (importInput) {
-      importInput.addEventListener('change', onImportFile);
-    }
-
     var statsSearchInput = document.getElementById('statsSearchInput');
     if (statsSearchInput) {
       if (searchHadFocus) {
@@ -1110,6 +1204,30 @@
         }
       }, { passive: true });
     }
+
+    var characterCarouselSwipe = document.getElementById('characterCarouselSwipe');
+    if (characterCarouselSwipe) {
+      var charTouchStartX = 0, charTouchStartY = 0, charTouchStartTime = 0, charTouchActive = false;
+      characterCarouselSwipe.addEventListener('touchstart', function (e) {
+        if (e.touches.length !== 1) return;
+        charTouchStartX = e.touches[0].clientX;
+        charTouchStartY = e.touches[0].clientY;
+        charTouchStartTime = Date.now();
+        charTouchActive = true;
+      }, { passive: true });
+      characterCarouselSwipe.addEventListener('touchend', function (e) {
+        if (!charTouchActive) return;
+        charTouchActive = false;
+        var touch = e.changedTouches[0];
+        var dx = touch.clientX - charTouchStartX;
+        var dy = touch.clientY - charTouchStartY;
+        var duration = Date.now() - charTouchStartTime;
+        // volontairement lent : un swipe rapide n'est pas pris en compte, il faut un glissé long et posé
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && duration >= 400) {
+          characterCarouselStep(dx < 0 ? 1 : -1);
+        }
+      }, { passive: true });
+    }
   }
 
   function grimoireStep(delta) {
@@ -1120,6 +1238,15 @@
     if (newIdx === idx) return;
     ui.grimoireAnimDirection = delta > 0 ? 'next' : 'prev';
     ui.grimoireTab = tabs[newIdx];
+    render();
+  }
+
+  function characterCarouselStep(delta) {
+    var newIdx = clamp(ui.characterCarouselIndex + delta, 0, CHARACTER_ORDER.length - 1);
+    if (newIdx === ui.characterCarouselIndex) return;
+    ui.characterCarouselAnimDirection = delta > 0 ? 'next' : 'prev';
+    ui.characterCarouselIndex = newIdx;
+    ui.characterUpdateNotice = null;
     render();
   }
 
@@ -1261,7 +1388,30 @@
         confirmRest();
         break;
 
-      case 'export-json': exportJson(); break;
+      case 'character-carousel-step': {
+        var carouselDelta = parseInt(e.currentTarget.getAttribute('data-delta'), 10);
+        characterCarouselStep(carouselDelta);
+        break;
+      }
+      case 'load-character': {
+        var loadId = e.currentTarget.getAttribute('data-id');
+        var characterToLoad = state.characters[loadId];
+        state.profiles[state.activeProfileIndex] = cloneDeep(characterToLoad.savedProfile);
+        state.activeCharacterId = loadId;
+        ui.characterUpdateNotice = null;
+        ui.view = 'tracker';
+        saveState(); render();
+        break;
+      }
+      case 'update-character': {
+        var updateId = e.currentTarget.getAttribute('data-id');
+        if (state.activeCharacterId === updateId) {
+          state.characters[updateId].savedProfile = cloneDeep(profile());
+          ui.characterUpdateNotice = updateId;
+          saveState(); render();
+        }
+        break;
+      }
 
       default: break;
     }
@@ -1325,89 +1475,6 @@
     ui.shortRestOpen = false;
     saveState();
     render();
-  }
-
-  function exportJson() {
-    var p = profile();
-    var today = new Date().toISOString().slice(0, 10);
-    var blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'jdr_save_' + today + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function isValidProfile(data) {
-    if (!data || typeof data !== 'object') return false;
-    if (typeof data.characterName !== 'string') return false;
-    if (!data.hp || typeof data.hp.current !== 'number' || typeof data.hp.max !== 'number' || typeof data.hp.temp !== 'number') return false;
-    if (!Array.isArray(data.spellLevels) || data.spellLevels.length !== 9) return false;
-    for (var i = 0; i < data.spellLevels.length; i++) {
-      var l = data.spellLevels[i];
-      if (typeof l.level !== 'number' || typeof l.enabled !== 'boolean' || typeof l.max !== 'number' || !Array.isArray(l.used)) return false;
-    }
-    if (data.classResources !== undefined) {
-      if (!Array.isArray(data.classResources)) return false;
-      for (var cri = 0; cri < data.classResources.length; cri++) {
-        var criItem = data.classResources[cri];
-        if (!criItem || typeof criItem.label !== 'string' || typeof criItem.max !== 'number' || !Array.isArray(criItem.used)) return false;
-      }
-    } else if (data.classResource !== undefined) {
-      if (!data.classResource || typeof data.classResource.enabled !== 'boolean' || typeof data.classResource.max !== 'number' || !Array.isArray(data.classResource.used)) return false;
-    } else {
-      return false;
-    }
-    if (data.combatStats !== undefined) {
-      if (typeof data.combatStats !== 'object' || !data.combatStats) return false;
-      if (typeof data.combatStats.ac !== 'number' || typeof data.combatStats.initiative !== 'number' || typeof data.combatStats.speed !== 'number') return false;
-    }
-    if (data.abilityScores !== undefined) {
-      if (typeof data.abilityScores !== 'object' || !data.abilityScores) return false;
-      for (var a = 0; a < ABILITY_KEYS.length; a++) {
-        if (typeof data.abilityScores[ABILITY_KEYS[a]] !== 'number') return false;
-      }
-    }
-    if (data.savingThrows !== undefined) {
-      if (typeof data.savingThrows !== 'object' || !data.savingThrows) return false;
-      for (var st = 0; st < ABILITY_KEYS.length; st++) {
-        if (typeof data.savingThrows[ABILITY_KEYS[st]] !== 'number') return false;
-      }
-    }
-    if (data.skills !== undefined) {
-      if (!Array.isArray(data.skills) || data.skills.length !== SKILL_NAMES.length) return false;
-      for (var s = 0; s < data.skills.length; s++) {
-        if (typeof data.skills[s].name !== 'string' || typeof data.skills[s].modifier !== 'number') return false;
-      }
-    }
-    return true;
-  }
-
-  function onImportFile(e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
-      try {
-        var data = JSON.parse(String(reader.result));
-        if (!isValidProfile(data)) throw new Error('invalid');
-        state.profiles[state.activeProfileIndex] = sanitizeProfile(data);
-        ui.importError = '';
-        saveState();
-        render();
-      } catch (err) {
-        ui.importError = 'Fichier invalide';
-        render();
-      }
-    };
-    reader.onerror = function () {
-      ui.importError = 'Fichier invalide';
-      render();
-    };
-    reader.readAsText(file);
   }
 
   render();
