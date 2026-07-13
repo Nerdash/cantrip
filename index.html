@@ -550,14 +550,6 @@
   function iconClose() {
     return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
   }
-  function iconCoins(size) {
-    var s = size || 40;
-    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-      '<circle cx="8.5" cy="15.5" r="6"/>' +
-      '<circle cx="15.5" cy="8.5" r="6"/>' +
-      '<path d="M8.5 12.7v1.6"/><path d="M15.5 5.7v1.6"/>' +
-      '</svg>';
-  }
 
   // ---- grimoire (Calix Noctavel) ----
   var SPELLBOOK = {
@@ -1485,11 +1477,7 @@
     };
     return '<div id="goldOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;box-sizing:border-box">' +
       '<div style="width:100%;max-width:300px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between">' +
-          '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">Or</div>' +
-          '<div data-action="cancel-gold-modal" style="width:28px;height:28px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-label);cursor:pointer">' + iconClose() + '</div>' +
-        '</div>' +
-        '<div style="display:flex;justify-content:center;color:var(--text-gold)">' + iconCoins(48) + '</div>' +
+        '<div style="font-size:17px;font-weight:700;color:var(--text-gold);text-align:center" class="font-cinzel">Or</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           stepBtn(steps[0]) + stepBtn(steps[1]) +
           '<input id="goldInput" type="text" inputmode="numeric" pattern="[0-9]*" value="' + value + '" style="flex:none;width:76px;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.34);border-radius:8px;color:var(--text-main);font-size:17px;font-weight:700;text-align:center;box-sizing:border-box"/>' +
