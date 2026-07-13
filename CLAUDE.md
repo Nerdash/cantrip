@@ -142,13 +142,16 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
 - **Charger un personnage** (`renderSettingsLoadCharacter()`, `view: 'settings-load-character'`,
   accessible depuis Paramétrer l'application) — carrousel plein écran (un personnage affiché à la
   fois, portrait + nom + sous-titre + niveau si défini) avec navigation par flèches
-  (`data-action="character-carousel-step"`) ou swipe horizontal sur `#characterCarouselSwipe`.
-  Le swipe est **volontairement lent à détecter** (`bindEvents()` exige un glissé d'au moins
-  400ms en plus du seuil de distance habituel — un flick rapide est ignoré) et l'animation de
-  transition (`character-anim-next`/`-prev`, 900ms) est nettement plus lente que celle du Grimoire
-  (420ms), pour un effet de feuilletage posé plutôt qu'un changement d'onglet classique. Un badge
-  "Personnage chargé" s'affiche sur la carte si `state.activeCharacterId` correspond au personnage
-  affiché.
+  (`data-action="character-carousel-step"`) ou glissé façon "carte à jouer" sur
+  `#characterCarouselSwipe`, implémenté via Pointer Events (souris **et** tactile, pas seulement
+  tactile) dans `bindEvents()` : la carte suit le curseur/doigt 1:1 pendant le drag (rotation +
+  fondu proportionnels à la distance), avec de la résistance si on dépasse le premier/dernier
+  personnage. Au relâché, au-delà d'un seuil de 90px la carte part en vol vers le bord (transition
+  de 360ms) puis `characterCarouselStep()` s'exécute et la carte suivante entre avec l'animation
+  CSS `character-anim-next`/`-prev` (650ms, plus lente que celle du Grimoire à 420ms, pour un effet
+  de feuilletage posé) ; en dessous du seuil, la carte revient se recaler avec la même transition
+  de 360ms. Un badge "Personnage chargé" s'affiche sur la carte si `state.activeCharacterId`
+  correspond au personnage affiché.
   Deux boutons en bas :
   - **Charger ce personnage** (`data-action="load-character"`) — toujours actif : clone
     `character.savedProfile` dans `state.profiles[state.activeProfileIndex]`, bascule
@@ -159,7 +162,10 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
     travail actuel (`profile()`) dans `character.savedProfile`, ce qui en fait les nouvelles
     valeurs par défaut de ce personnage. **Grisé/non cliquable** (`pointer-events:none`) tant que
     ce personnage n'est pas celui actuellement chargé (`state.activeCharacterId !== charId`) —
-    impossible de mettre à jour un personnage sans l'avoir chargé au préalable.
+    impossible de mettre à jour un personnage sans l'avoir chargé au préalable. Une ligne d'aide
+    sous ce bouton est **toujours présente** (jamais conditionnelle) pour éviter un décalage
+    vertical pendant le swipe entre les deux personnages : "Chargez ce personnage avant de pouvoir
+    le mettre à jour." si non chargé, "Ce personnage est actuellement chargé." sinon.
   Un message transitoire (`ui.characterNotice = { id, text }`, propre au personnage affiché dans
   le carrousel) s'affiche après une mise à jour ou un import réussis ("Personnage mis à jour." /
   "Personnage importé."), effacé au moindre changement d'onglet du carrousel.
@@ -222,7 +228,7 @@ au chargement de ce personnage (`applyTheme()`, appelé au démarrage depuis `lo
   l'ancien thème clair unique (pas blanc, pour garder l'aspect médiéval).
 - **Thème Deneor** (`:root[data-theme="deneor"]`) — palette sombre vert forêt construite autour
   de Pantone 3435 C (`#154734`, utilisé comme `--border-strong`), cohérente avec le thème de
-  Paladin sous le Serment des Anciens de Deneor Sentariel.
+  Paladin sous Serment des Anciens de Deneor Sentariel.
 Les deux jeux de variables CSS custom properties (fonds, bordures, textes, couleurs d'accent des
 badges) sont définis en tête de fichier dans le bloc `<style>`. **Toute nouvelle couleur ajoutée
 dans un template JS doit utiliser `var(--...)` plutôt qu'un hex en dur** pour rester compatible

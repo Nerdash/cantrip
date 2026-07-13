@@ -131,8 +131,8 @@
     from { opacity: 0; transform: translateX(-60px); }
     to { opacity: 1; transform: translateX(0); }
   }
-  .character-anim-next { animation: character-slide-next 900ms ease-in-out; }
-  .character-anim-prev { animation: character-slide-prev 900ms ease-in-out; }
+  .character-anim-next { animation: character-slide-next 650ms ease-in-out; }
+  .character-anim-prev { animation: character-slide-prev 650ms ease-in-out; }
 </style>
 </head>
 <body>
@@ -367,7 +367,7 @@
   function defaultCharacters() {
     return {
       calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg', 'calix', calixDefaultProfile()),
-      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png', 'deneor', deneorDefaultProfile())
+      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous Serment des Anciens', null, 'characters/deneor.png', 'deneor', deneorDefaultProfile())
     };
   }
 
@@ -401,11 +401,14 @@
           var c = parsed.characters[id];
           if (!c || typeof c !== 'object') { parsed.characters[id] = defaults[id]; return; }
           c.id = id;
-          if (typeof c.name !== 'string') c.name = defaults[id].name;
-          if (typeof c.subtitle !== 'string') c.subtitle = defaults[id].subtitle;
-          if (typeof c.level !== 'number') c.level = defaults[id].level;
-          if (typeof c.portrait !== 'string') c.portrait = defaults[id].portrait;
-          if (c.theme !== 'calix' && c.theme !== 'deneor') c.theme = defaults[id].theme;
+          // name/subtitle/level/portrait/theme ne sont éditables nulle part dans l'UI : toujours
+          // resynchronisés depuis les valeurs par défaut du code pour que les corrections de texte
+          // (typos, etc.) atteignent aussi les sauvegardes existantes, pas seulement les nouvelles.
+          c.name = defaults[id].name;
+          c.subtitle = defaults[id].subtitle;
+          c.level = defaults[id].level;
+          c.portrait = defaults[id].portrait;
+          c.theme = defaults[id].theme;
           if (!c.savedProfile || typeof c.savedProfile !== 'object') c.savedProfile = defaults[id].savedProfile;
           else sanitizeProfile(c.savedProfile);
         });
@@ -513,6 +516,9 @@
   }
   function iconChevronRight() {
     return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+  }
+  function iconClose() {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
   }
 
   // ---- grimoire (Calix Noctavel) ----
@@ -1125,7 +1131,7 @@
         '<div style="display:flex;flex-direction:column;gap:10px;flex:none">' +
           '<div data-action="load-character" data-id="' + charId + '" style="height:48px;border-radius:10px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center" class="font-cinzel">Charger ce personnage</div>' +
           '<div data-action="update-character" data-id="' + charId + '" style="height:44px;border-radius:10px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);color:' + (updateDisabled ? 'var(--text-dim)' : 'var(--text-main)') + ';font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;' + (updateDisabled ? 'opacity:0.45;pointer-events:none;' : 'cursor:pointer;') + '">Mettre à jour le personnage</div>' +
-          (updateDisabled ? '<div style="font-size:11px;color:var(--text-dim);text-align:center">Chargez ce personnage avant de pouvoir le mettre à jour.</div>' : '') +
+          '<div style="font-size:11px;color:var(--text-dim);text-align:center">' + (updateDisabled ? 'Chargez ce personnage avant de pouvoir le mettre à jour.' : 'Ce personnage est actuellement chargé.') + '</div>' +
         '</div>' +
         SETTINGS_SEPARATOR +
         '<div style="display:flex;flex-direction:column;gap:6px;flex:none">' +
@@ -1158,12 +1164,12 @@
 
     return '<div id="restOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;box-sizing:border-box">' +
       '<div style="width:100%;max-width:300px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">' +
-        '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">Repos</div>' +
-        rowsHtml +
-        '<div style="display:flex;gap:10px;margin-top:4px">' +
-          '<div data-action="cancel-rest" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(var(--border-tint),0.34);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
-          '<div data-action="confirm-rest" style="flex:1;height:44px;border-radius:6px;background:var(--ink-bright);border:none;color:var(--ink-dark);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">Valider</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between">' +
+          '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">Repos</div>' +
+          '<div data-action="cancel-rest" style="width:28px;height:28px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-label);cursor:pointer">' + iconClose() + '</div>' +
         '</div>' +
+        rowsHtml +
+        '<div data-action="confirm-rest" style="height:44px;border-radius:6px;background:var(--ink-bright);border:none;color:var(--ink-dark);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:4px">Se reposer</div>' +
       '</div>' +
     '</div>';
   }
@@ -1377,13 +1383,13 @@
         if (dx <= -threshold && canNext) commitDelta = 1;
         else if (dx >= threshold && canPrev) commitDelta = -1;
 
-        characterCarouselSwipe.style.transition = 'transform 480ms cubic-bezier(0.22,0.61,0.36,1), opacity 480ms ease-out';
+        characterCarouselSwipe.style.transition = 'transform 360ms cubic-bezier(0.22,0.61,0.36,1), opacity 360ms ease-out';
 
         if (commitDelta !== 0) {
           var flyX = commitDelta > 0 ? -420 : 420;
           characterCarouselSwipe.style.transform = 'translateX(' + flyX + 'px) rotate(' + (commitDelta > 0 ? -14 : 14) + 'deg)';
           characterCarouselSwipe.style.opacity = '0';
-          setTimeout(function () { characterCarouselStep(commitDelta); }, 480);
+          setTimeout(function () { characterCarouselStep(commitDelta); }, 360);
         } else {
           characterCarouselSwipe.style.transform = '';
           characterCarouselSwipe.style.opacity = '';
