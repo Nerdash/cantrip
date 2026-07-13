@@ -179,8 +179,10 @@
     return 'cr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
   }
 
-  function makeClassResource(label, max) {
-    return { id: generateId(), label: label || 'Ressource de Classe', max: max || 0, used: [] };
+  function makeClassResource(label, max, type) {
+    var resource = { id: generateId(), label: label || 'Ressource de Classe', max: max || 0, type: type === 'counter' ? 'counter' : 'badges', used: [] };
+    if (resource.type === 'counter') resource.current = resource.max;
+    return resource;
   }
 
   function defaultProfile() {
@@ -260,7 +262,14 @@
       if (typeof cr.label !== 'string') cr.label = 'Ressource de Classe';
       if (typeof cr.max !== 'number' || isNaN(cr.max)) cr.max = 0;
       cr.max = Math.max(0, Math.min(20, cr.max));
-      cr.used = resizeUsedArray(cr.used, cr.max);
+      if (cr.type !== 'counter') cr.type = 'badges';
+      if (cr.type === 'counter') {
+        if (typeof cr.current !== 'number' || isNaN(cr.current)) cr.current = cr.max;
+        cr.current = clamp(cr.current, 0, cr.max);
+        cr.used = [];
+      } else {
+        cr.used = resizeUsedArray(cr.used, cr.max);
+      }
     });
     if (!Array.isArray(p.preparedSpells)) p.preparedSpells = [];
     else p.preparedSpells = p.preparedSpells.filter(function (n) { return typeof n === 'string'; });
@@ -461,8 +470,9 @@
     grimoireTab: 0, // niveau numérique (0..9) ou 'classe'
     grimoireAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderGrimoire()/renderGrimoirePrepare()
     grimoireFilters: { action: false, bonus: false, reaction: false }, // conservés entre les onglets de niveau
-    prepareFilters: { action: false, bonus: false, classe: false }, // filtres propres à la page "Préparation de sorts" (Deneor)
+    prepareFilters: { action: false, bonus: false }, // filtres propres à la page "Préparation de sorts" (Deneor)
     grimoirePrepareBackView: 'grimoire', // vue vers laquelle revenir depuis "Préparation de sorts"
+    draftPreparedSpells: [], // copie de travail de profile().preparedSpells pendant "grimoire-prepare" ; seul "Valider" la répercute
     settingsLevelError: '',
     disableLevelDialog: null, // { level: number } quand la confirmation de désactivation est ouverte
     characterCarouselIndex: 0, // index dans CHARACTER_ORDER, propre à l'écran "Charger un personnage"
@@ -774,6 +784,16 @@
       }).join('');
 
     var classHtml = p.classResources.map(function (cr) {
+      if (cr.type === 'counter') {
+        return '<div style="display:flex;flex-direction:column;gap:6px">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--text-label);text-transform:uppercase;letter-spacing:0.08em">' + escapeHtml(cr.label || 'Ressource') + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<div data-action="counter-dec" data-id="' + cr.id + '" style="flex:none;width:34px;height:34px;border-radius:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#ef4444;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">&minus;</div>' +
+            '<div style="font-size:17px;font-weight:700;color:var(--text-main);min-width:52px;text-align:center">' + cr.current + ' / ' + cr.max + '</div>' +
+            '<div data-action="counter-inc" data-id="' + cr.id + '" style="flex:none;width:34px;height:34px;border-radius:6px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.45);color:#22c55e;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none">+</div>' +
+          '</div>' +
+          '</div>';
+      }
       var cbadges = cr.used.map(function (used, i) {
         return '<div class="badge ' + (used ? 'badge-used' : 'badge-available') + '" data-action="toggle-class" data-id="' + cr.id + '" data-index="' + i + '">' + (i + 1) + '</div>';
       }).join('');
@@ -876,7 +896,7 @@
       : '<div style="padding:16px;text-align:center;font-size:12px;color:var(--text-dim)">Aucune compétence trouvée.</div>';
 
     return (
-      '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;position:relative">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Personnage</div>' +
         '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:52px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);border-radius:10px;color:var(--text-main);font-size:16px;padding:0 16px;box-sizing:border-box"/>' +
         '<div style="flex:none">' +
@@ -887,6 +907,7 @@
           '<div style="font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em;flex:none">Compétences</div>' +
           '<div data-scroll-root style="flex:1;min-height:0;overflow-y:auto;border-radius:12px;border:1px solid rgba(var(--border-tint),0.2)">' + skillsHtml + '</div>' +
         '</div>' +
+        '<div id="statsResetBtn" data-action="reset-stats-view" style="position:absolute;top:0;right:0;width:36px;height:36px;border-radius:8px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-main);opacity:0;pointer-events:none;transition:opacity 150ms ease-out;z-index:5">' + iconClose() + '</div>' +
       '</div>'
     );
   }
@@ -898,7 +919,8 @@
 
   function grimoireTabs() {
     var tabs = [];
-    for (var i = 0; i <= maxEnabledSpellLevel(); i++) tabs.push(i);
+    var hasLevelZero = activeSpellbook().sections.some(function (s) { return s.level === 0 && s.spells.length > 0; });
+    for (var i = hasLevelZero ? 0 : 1; i <= maxEnabledSpellLevel(); i++) tabs.push(i);
     tabs.push('classe');
     return tabs;
   }
@@ -920,17 +942,16 @@
     return activeFilters.some(function (f) { return t.indexOf(f.prefix) === 0; });
   }
 
-  // Filtres de la page "Préparation de sorts" (Deneor) : Réaction n'a aucun sens pour lui (aucun
-  // sort de ce type dans sa liste), remplacé par "Classe" qui révèle les capacités de classe/serment
-  // sous l'onglet de niveau en cours, sans changer d'onglet.
+  // Filtres de la page "Préparation de sorts" (Deneor) : pas de Réaction (aucun sort de ce type
+  // dans sa liste) ni de Classe (les capacités de classe/serment ne sont pas préparables, elles
+  // n'apparaissent que dans le Grimoire normal).
   var PREPARE_FILTERS = [
     { key: 'action', label: 'Action', prefix: 'ACTION', style: 'background:rgba(125,211,252,0.16);border:1px solid rgba(125,211,252,0.45);color:var(--accent-blue-text);' },
-    { key: 'bonus', label: 'Bonus', prefix: 'BONUS', style: 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);' },
-    { key: 'classe', label: 'Classe', style: 'background:rgba(var(--border-tint),0.28);border:1px solid var(--border-strong);color:var(--text-gold);' }
+    { key: 'bonus', label: 'Bonus', prefix: 'BONUS', style: 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);' }
   ];
 
   function spellMatchesPrepareTypeFilters(spell) {
-    var activeFilters = PREPARE_FILTERS.filter(function (f) { return f.prefix && ui.prepareFilters[f.key]; });
+    var activeFilters = PREPARE_FILTERS.filter(function (f) { return ui.prepareFilters[f.key]; });
     if (!activeFilters.length) return true;
     var t = spell.type.toUpperCase();
     return activeFilters.some(function (f) { return t.indexOf(f.prefix) === 0; });
@@ -938,7 +959,7 @@
 
   function renderGrimoireSection(section, spells, prepareMode) {
     var rowsHtml = spells.map(function (spell, i) {
-      var prepared = !!prepareMode && profile().preparedSpells.indexOf(spell.name) !== -1;
+      var prepared = !!prepareMode && ui.draftPreparedSpells.indexOf(spell.name) !== -1;
       var clickable = !!prepareMode;
       return '<div ' + (clickable ? 'data-action="toggle-prepared-spell" data-name="' + escapeHtml(spell.name) + '"' : '') +
         ' style="padding:11px 14px;background:' + (prepared ? 'rgba(var(--border-tint),0.16)' : (i % 2 ? 'var(--bg-card-alt)' : 'var(--bg-card)')) + ';border-bottom:1px solid rgba(var(--border-tint),0.14);' + (clickable ? 'cursor:pointer;' : '') + (prepared ? 'border-left:3px solid var(--border-strong);' : '') + '">' +
@@ -1028,7 +1049,7 @@
     var animDirection = ui.grimoireAnimDirection;
     ui.grimoireAnimDirection = null;
 
-    var tabs = grimoireTabs();
+    var tabs = grimoireTabs().filter(function (t) { return t !== 'classe'; });
     if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = 0;
     var tabsHtml = grimoireTabsHtml(tabs);
 
@@ -1057,14 +1078,7 @@
       contentHtml = '<div style="padding:24px 4px;text-align:center;font-size:12px;color:var(--text-dim)">Aucun sort ne correspond aux filtres sélectionnés.</div>';
     }
 
-    if (ui.prepareFilters.classe && ui.grimoireTab !== 'classe') {
-      var classeSection = DENEOR_SPELLBOOK.sections.filter(function (s) { return s.level === 'classe'; })[0];
-      if (classeSection) {
-        contentHtml += '<div style="height:14px"></div>' + renderGrimoireSection(classeSection, classeSection.spells);
-      }
-    }
-
-    var preparedCount = profile().preparedSpells.length;
+    var preparedCount = ui.draftPreparedSpells.length;
 
     return (
       '<div style="display:flex;flex-direction:column;height:100%;gap:12px">' +
@@ -1078,6 +1092,7 @@
         '<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:none">' + filterChipsHtml + '</div>' +
         '<div class="hscroll" style="flex:none;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">' + tabsHtml + '</div>' +
         '<div id="grimoireSwipe" data-scroll-root class="' + (animDirection === 'next' ? 'grimoire-anim-next' : animDirection === 'prev' ? 'grimoire-anim-prev' : '') + '" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:4px">' + contentHtml + '</div>' +
+        '<div data-action="confirm-grimoire-prepare" style="flex:none;height:48px;border-radius:10px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center" class="font-cinzel">Valider</div>' +
       '</div>'
     );
   }
@@ -1136,6 +1151,7 @@
 
     var classResourceRows = p.classResources.map(function (cr) {
       return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg-card);border-bottom:1px solid rgba(var(--border-tint),0.14)">' +
+        (cr.type === 'counter' ? '<div style="flex:none;font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-gold);background:rgba(var(--border-tint),0.18);border:1px solid rgba(var(--border-tint),0.4);padding:3px 6px;border-radius:6px;white-space:nowrap">Compteur</div>' : '') +
         '<input type="text" data-action="class-resource-label" data-id="' + cr.id + '" value="' + escapeHtml(cr.label) + '" placeholder="Libellé (ex. Ki)" style="flex:1;min-width:0;height:36px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;padding:0 10px;box-sizing:border-box"/>' +
         '<label style="font-size:11px;color:var(--text-muted)">Max</label>' +
         '<input type="text" inputmode="numeric" pattern="[0-9]*" value="' + cr.max + '" data-action="class-resource-max" data-id="' + cr.id + '" style="width:42px;height:36px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:13px;text-align:center;box-sizing:border-box"/>' +
@@ -1181,7 +1197,10 @@
           (p.classResources.length
             ? '<div style="display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2)">' + classResourceRows + '</div>'
             : '') +
-          '<div data-action="add-class-resource" style="height:44px;border-radius:10px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">+ Ajouter une ressource</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<div data-action="add-class-resource" style="flex:1;height:44px;border-radius:10px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center">+ Ajouter une ressource</div>' +
+            '<div data-action="add-class-counter" style="flex:1;height:44px;border-radius:10px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center">+ Ajouter un compteur</div>' +
+          '</div>' +
         '</div>';
 
     var abilitiesBlock =
@@ -1432,7 +1451,8 @@
         if (!cr) return;
         var max = clamp(toInt(el.value, cr.max), 0, 20);
         cr.max = max;
-        cr.used = resizeUsedArray(cr.used, max);
+        if (cr.type === 'counter') cr.current = clamp(cr.current, 0, max);
+        else cr.used = resizeUsedArray(cr.used, max);
         saveState();
         render();
       });
@@ -1461,6 +1481,20 @@
         ui.statsSearch = statsSearchInput.value;
         render();
       });
+
+      var statsResetBtn = document.getElementById('statsResetBtn');
+      if (statsResetBtn) {
+        // Bascule directement le style au focus/blur (pas de render()) pour éviter une boucle :
+        // un render() re-focaliserait le nouvel input, qui re-déclencherait 'focus', etc.
+        var updateStatsResetVisibility = function () {
+          var focused = document.activeElement === statsSearchInput;
+          statsResetBtn.style.opacity = focused ? '1' : '0';
+          statsResetBtn.style.pointerEvents = focused ? 'auto' : 'none';
+        };
+        updateStatsResetVisibility();
+        statsSearchInput.addEventListener('focus', updateStatsResetVisibility);
+        statsSearchInput.addEventListener('blur', updateStatsResetVisibility);
+      }
     }
 
     app.querySelectorAll('[data-action="ability-input"]').forEach(function (el) {
@@ -1699,6 +1733,23 @@
         saveState(); render();
         break;
       }
+      case 'add-class-counter': {
+        profile().classResources.push(makeClassResource('Compteur', 0, 'counter'));
+        saveState(); render();
+        break;
+      }
+      case 'counter-inc': {
+        var incCrId = e.currentTarget.getAttribute('data-id');
+        var incCr = profile().classResources.find(function (x) { return x.id === incCrId; });
+        if (incCr) { incCr.current = clamp(incCr.current + 1, 0, incCr.max); saveState(); render(); }
+        break;
+      }
+      case 'counter-dec': {
+        var decCrId = e.currentTarget.getAttribute('data-id');
+        var decCr = profile().classResources.find(function (x) { return x.id === decCrId; });
+        if (decCr) { decCr.current = clamp(decCr.current - 1, 0, decCr.max); saveState(); render(); }
+        break;
+      }
       case 'remove-class-resource': {
         var removeId = e.currentTarget.getAttribute('data-id');
         var crs = profile().classResources;
@@ -1783,6 +1834,11 @@
         saveState(); render();
         break;
       }
+      case 'reset-stats-view':
+        ui.statsSearch = '';
+        if (document.activeElement && document.activeElement.id === 'statsSearchInput') document.activeElement.blur();
+        render();
+        break;
 
       case 'open-rest':
         ui.shortRestChecks = { hp: false, spells: false, tempHp: false, classResource: false };
@@ -1809,18 +1865,24 @@
       case 'open-grimoire-prepare': {
         var prepareBack = e.currentTarget.getAttribute('data-back');
         ui.grimoirePrepareBackView = prepareBack || 'grimoire';
+        ui.draftPreparedSpells = profile().preparedSpells.slice();
         ui.view = 'grimoire-prepare';
         render();
         break;
       }
       case 'toggle-prepared-spell': {
         var spellName = e.currentTarget.getAttribute('data-name');
-        var prepared = profile().preparedSpells;
-        var spellIdx = prepared.indexOf(spellName);
-        if (spellIdx === -1) prepared.push(spellName); else prepared.splice(spellIdx, 1);
-        saveState(); render();
+        var draftIdx = ui.draftPreparedSpells.indexOf(spellName);
+        if (draftIdx === -1) ui.draftPreparedSpells.push(spellName); else ui.draftPreparedSpells.splice(draftIdx, 1);
+        render();
         break;
       }
+      case 'confirm-grimoire-prepare':
+        profile().preparedSpells = ui.draftPreparedSpells.slice();
+        saveState();
+        ui.view = ui.grimoirePrepareBackView || 'grimoire';
+        render();
+        break;
       case 'toggle-prepare-filter': {
         var prepareFilterKey = e.currentTarget.getAttribute('data-filter');
         ui.prepareFilters[prepareFilterKey] = !ui.prepareFilters[prepareFilterKey];
@@ -1884,6 +1946,30 @@
     }
   });
 
+  // Swipe entre les pages Suivi et Personnage (adjacentes dans la bottom nav). Attaché une seule
+  // fois sur #app (pas dans bindEvents, qui re-rendrait la page à chaque appel) ; ignore les swipes
+  // démarrés dans une rangée .hscroll pour ne pas gêner le défilement horizontal des badges.
+  var mainSwipeStartX = 0, mainSwipeStartY = 0, mainSwipeActive = false, mainSwipeFromHscroll = false;
+  app.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    mainSwipeStartX = e.clientX;
+    mainSwipeStartY = e.clientY;
+    mainSwipeActive = true;
+    mainSwipeFromHscroll = !!(e.target && e.target.closest && e.target.closest('.hscroll'));
+  });
+  app.addEventListener('pointerup', function (e) {
+    if (!mainSwipeActive) return;
+    mainSwipeActive = false;
+    if (mainSwipeFromHscroll) return;
+    if (ui.view !== 'tracker' && ui.view !== 'stats') return;
+    var dx = e.clientX - mainSwipeStartX;
+    var dy = e.clientY - mainSwipeStartY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (ui.view === 'tracker' && dx < 0) { ui.view = 'stats'; render(); }
+      else if (ui.view === 'stats' && dx > 0) { ui.view = 'tracker'; render(); }
+    }
+  });
+
   function startEditMax() { ui.editingMax = true; render(); }
 
   function applyDamage() {
@@ -1920,7 +2006,8 @@
     }
     if (checks.classResource) {
       p.classResources.forEach(function (cr) {
-        cr.used = cr.used.map(function () { return false; });
+        if (cr.type === 'counter') cr.current = cr.max;
+        else cr.used = cr.used.map(function () { return false; });
       });
     }
   }
@@ -1936,6 +2023,7 @@
     applyRestChecks();
     ui.shortRestOpen = false;
     ui.grimoirePrepareBackView = 'tracker';
+    ui.draftPreparedSpells = profile().preparedSpells.slice();
     ui.view = 'grimoire-prepare';
     saveState();
     render();

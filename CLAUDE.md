@@ -51,11 +51,23 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
    pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
    violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
+   Swipe horizontal possible vers la page Personnage (voir juste en dessous) : listener
+   `pointerdown`/`pointerup` attaché une seule fois sur `#app` (hors `bindEvents()`, à côté du
+   listener `focusin`), qui ignore les swipes démarrés dans une rangée `.hscroll` (badges de sorts/
+   ressources) pour ne pas gêner leur défilement horizontal natif.
 2. **Personnage** (onglet nav, anciennement "Stats" ; le code interne — `renderStats()`,
    `ui.statsSearch`, `view: 'stats'` — garde le nom `stats`) — caractéristiques (6) et
    compétences (18, D&D 5e, noms français) en lecture seule, avec champ de recherche filtrant
    la liste en direct. Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
-   aucun modificateur).
+   aucun modificateur). Accessible par swipe horizontal depuis/vers le Tracker (même mécanisme
+   que ci-dessus, symétrique).
+   Sur certains appareils, le clavier virtuel qui s'ouvre au focus du champ de recherche masque le
+   bloc "Caractéristiques". Une croix (`#statsResetBtn`, en haut à droite, `iconClose()`) apparaît
+   alors pour remettre la page à zéro (`data-action="reset-stats-view"` : vide `ui.statsSearch` et
+   appelle `.blur()` sur le champ). Sa visibilité est pilotée directement par des listeners
+   `focus`/`blur` sur `#statsSearchInput` qui togglent `style.opacity`/`pointerEvents`
+   **sans appeler `render()`** — un `render()` y recréerait l'input et le refocaliserait, ce qui
+   redéclencherait `focus` en boucle (même pattern que `#grimoirePrepareFab`).
 3. **Grimoire** — affiche les capacités du personnage (sorts par niveau + capacités de classe et
    dons), regroupées par section avec badge de type d'action coloré (Action/Bonus/Réaction/
    Rituel/Passif...), niveau, portée/durée et note d'usage en italique. Contenu **statique,
@@ -67,9 +79,11 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    **Grimoire de Deneor (Paladin, Serment des Anciens)** : système de préparation de sorts
    quotidienne, voir sous-section dédiée plus bas.
    Pagination par onglets sous le titre "Grimoire" : un onglet par niveau de sort de 0 à
-   `maxEnabledSpellLevel()` (le plus haut niveau d'emplacement activé dans Paramètres), plus un
-   onglet "Classe" en dernière position pour la section "Capacités de classe et dons" (non liée
-   à un niveau). Navigation par tap sur un onglet (`data-action="grimoire-tab"`) ou par swipe
+   `maxEnabledSpellLevel()` (le plus haut niveau d'emplacement activé dans Paramètres) — l'onglet
+   0 est omis si le grimoire actif (`activeSpellbook()`) n'a aucun sort de niveau 0 (cas de Deneor,
+   qui n'a pas de sorts mineurs de Paladin) —, plus un onglet "Classe" en dernière position pour la
+   section "Capacités de classe et dons" (non liée à un niveau). Navigation par tap sur un onglet
+   (`data-action="grimoire-tab"`) ou par swipe
    horizontal sur la zone de contenu (`#grimoireSwipe`, listeners `touchstart`/`touchend` dans
    `bindEvents()`) : swipe vers la gauche = niveau suivant, swipe vers la droite = niveau
    précédent, sans effet de bord aux extrémités (`grimoireStep()`). Le swipe (mais pas le tap sur
@@ -91,26 +105,34 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    persistant, migré par `sanitizeProfile()`) ; la section `classe` (capacités de classe, de
    serment, et la card `SERMENT` de résumé des préceptes) reste toujours affichée en entier.
    Une page dédiée `renderGrimoirePrepare()` (`view: 'grimoire-prepare'`) permet de choisir les
-   sorts préparés, sans plafond imposé : elle réutilise les mêmes onglets de niveau
+   sorts préparés, sans plafond imposé : elle réutilise les onglets de niveau
    (`grimoireTabs()`/`ui.grimoireTab`/`grimoireStep()`, y compris le swipe, `#grimoireSwipe`
-   partagé puisque les deux pages ne sont jamais montées en même temps) mais affiche, pour
-   chaque niveau, uniquement les sorts préparables (`!spell.alwaysAvailable`) — les sorts de
-   serment toujours disponibles n'apparaissent que dans le Grimoire normal, jamais sur cette page.
-   Rendus par `renderGrimoireSection(section, spells, true)`, chaque sort toggle sa présence dans
-   `preparedSpells` au tap (`data-action="toggle-prepared-spell"`) avec une mise en évidence
-   (bordure + fond teinté). Un
-   compteur mis en valeur (fond plein) affiche `preparedSpells.length` en haut à droite de
-   l'en-tête. Filtres dédiés `PREPARE_FILTERS` (état `ui.prepareFilters`, éphémère) : Action /
-   Bonus / **Classe** — remplace Réaction (aucun sort de ce type chez Deneor) ; le chip Classe
-   révèle la section `classe` (lecture seule) sous l'onglet de niveau courant sans en changer
-   (no-op si on est déjà sur l'onglet Classe).
-   Trois points d'entrée vers cette page, chacun fixant `ui.grimoirePrepareBackView` pour que le
-   bouton retour revienne au bon endroit : le bouton flottant `#grimoirePrepareFab` en bas du
-   Grimoire (visible seulement en haut de la liste, listener de scroll sur `#grimoireSwipe` dans
-   `bindEvents()` qui bascule directement `style.opacity`/`pointerEvents` sans `render()`), le
-   bouton "Préparer mes sorts" de `renderSettingsGrimoire()` (qui bascule aussi sur son contenu
-   Deneor selon `state.activeCharacterId`), et le bouton "Se reposer et préparer des sorts" de la
-   modale Repos (Deneor uniquement, `confirmRestAndPrepare()` — factorisé avec `confirmRest()` via
+   partagé puisque les deux pages ne sont jamais montées en même temps) **sans l'onglet Classe**,
+   filtré (`tabs.filter(t => t !== 'classe')`) puisque les capacités de classe/serment ne sont pas
+   préparables — elles n'apparaissent que dans le Grimoire normal. Pour chaque niveau, affiche
+   uniquement les sorts préparables (`!spell.alwaysAvailable`) ; les sorts de serment toujours
+   disponibles n'apparaissent jamais sur cette page non plus. Rendus par `renderGrimoireSection
+   (section, spells, true)`, chaque sort toggle sa présence au tap
+   (`data-action="toggle-prepared-spell"`) avec une mise en évidence (bordure + fond teinté). Un
+   badge rond mis en valeur (fond plein, juste le chiffre) affiche le nombre de sorts sélectionnés
+   en haut à droite de l'en-tête. Filtres dédiés `PREPARE_FILTERS` (état `ui.prepareFilters`,
+   éphémère) : seulement Action / Bonus (pas de Réaction — aucun sort de ce type chez Deneor — ni
+   de Classe).
+   **Brouillon non destructif** : les sélections ne modifient pas directement
+   `profile().preparedSpells` mais une copie de travail éphémère `ui.draftPreparedSpells`
+   (initialisée à l'entrée sur la page, dans les trois points d'entrée ci-dessous). La flèche
+   retour en haut à gauche (`data-action="nav"`) ferme la page sans rien valider — le brouillon est
+   simplement abandonné. Seul le bouton "Valider" en bas de page
+   (`data-action="confirm-grimoire-prepare"`) répercute `ui.draftPreparedSpells` dans
+   `profile().preparedSpells`, sauvegarde (`saveState()`) et revient à `ui.grimoirePrepareBackView`.
+   Trois points d'entrée vers cette page, chacun fixant `ui.grimoirePrepareBackView` (pour que le
+   bouton retour/Valider revienne au bon endroit) et `ui.draftPreparedSpells` : le bouton flottant
+   `#grimoirePrepareFab` en bas du Grimoire (visible seulement en haut de la liste, listener de
+   scroll sur `#grimoireSwipe` dans `bindEvents()` qui bascule directement
+   `style.opacity`/`pointerEvents` sans `render()`), le bouton "Préparer mes sorts" de
+   `renderSettingsGrimoire()` (qui bascule aussi sur son contenu Deneor selon
+   `state.activeCharacterId`), et le bouton "Se reposer et préparer des sorts" de la modale Repos
+   (Deneor uniquement, `confirmRestAndPrepare()` — factorisé avec `confirmRest()` via
    `applyRestChecks()` commun).
 4. **Paramètres** — depuis juillet 2026, `renderSettings()` n'affiche plus qu'un menu de trois
    boutons (`data-action="nav"`, réutilise le pattern générique de navigation) qui renvoient
@@ -134,13 +156,23 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      désactivés en cascade ; désactiver le niveau actif le plus haut ne demande pas de
      confirmation.
      **Ressource(s) de classe** : `profile.classResources` est un tableau (0..n éléments, pas de
-     limite) d'objets `{ id, label, max, used[] }` — chacun avec son propre libellé et son propre
-     nombre d'emplacements, éditables en ligne (`data-action="class-resource-label"` /
-     `"class-resource-max"`), plus un bouton "+ Ajouter une ressource"
-     (`data-action="add-class-resource"`, crée via `makeClassResource()`/`generateId()`) et un
-     bouton de suppression par ligne (`data-action="remove-class-resource"`). Il n'y a plus de
-     notion d'« activer » : une ressource existe dans le tableau ou n'existe pas. La modale Repos
-     réinitialise tous les `used[]` de `classResources` d'un coup (case "Ressource(s) de classe").
+     limite) d'objets `{ id, label, max, type, used[], current? }` — chacun avec son propre
+     libellé et son propre nombre d'emplacements, éditables en ligne
+     (`data-action="class-resource-label"` / `"class-resource-max"`). Deux types (`cr.type`,
+     `makeClassResource(label, max, type)`) :
+     - `'badges'` (défaut, historique) — une rangée de badges à cocher (`used[]`), comme les
+       emplacements de sorts.
+     - `'counter'` — un compteur `current`/`max` avec boutons −/+ (`data-action="counter-dec"`/
+       `"counter-inc"`), même principe que les PV mais en plus petit, sans rangée de badges
+       (`used` reste `[]`). `current` est clampé à `[0, max]` à chaque changement (inc/dec, édition
+       du max en Paramètres, migration `sanitizeProfile()`).
+     Deux boutons "+ Ajouter une ressource" (`data-action="add-class-resource"`, type `badges`) et
+     "+ Ajouter un compteur" (`data-action="add-class-counter"`, type `counter`), tous deux créés
+     via `makeClassResource()`/`generateId()` ; un bouton de suppression par ligne
+     (`data-action="remove-class-resource"`). Il n'y a plus de notion d'« activer » : une ressource
+     existe dans le tableau ou n'existe pas. La modale Repos réinitialise chaque ressource selon son
+     type (`used[]` à `false` pour `badges`, `current = max` pour `counter`) d'un coup (case
+     "Restaurer les ressources de classe").
      `sanitizeProfile()` migre automatiquement l'ancien format mono-ressource
      (`profile.classResource: { enabled, label, max, used }`) vers `classResources` — appliqué à
      chaque chargement, aussi bien au profil actif (`state.profiles[]`) qu'aux instantanés
@@ -237,8 +269,9 @@ révisé"). En cas de divergence, les arbitrages suivants ont été retenus :
 
 - **Dégâts/soins** : tap direct sur `−`/`+` (1 point par tap), **pas** de champ de saisie de
   quantité — choix explicite, contrairement au doc de specs qui décrivait un champ + bouton.
-- **Modale "Repos" unique** (pas de Repos Court/Long séparés) : la case "Total de PV", si
-  cochée, restaure réellement les PV au max (comportement actif, pas juste un aide-mémoire).
+- **Modale "Repos" unique** (pas de Repos Court/Long séparés) : la case "Restaurer les points de
+  vie", si cochée, restaure réellement les PV au max (comportement actif, pas juste un
+  aide-mémoire).
   Ce point diverge du doc de specs et n'a pas été explicitement re-confirmé par l'utilisateur —
   à surveiller si retour futur.
 - Les cases à cocher de la modale Repos sont toutes décochées par défaut à chaque ouverture.
