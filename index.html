@@ -471,7 +471,7 @@
     grimoireTab: 0, // niveau numérique (0..9) ou 'classe'
     grimoireAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderGrimoire()/renderGrimoirePrepare()
     grimoireFilters: { action: false, bonus: false, reaction: false }, // conservés entre les onglets de niveau
-    prepareFilters: { action: false, bonus: false }, // filtres propres à la page "Préparation de sorts" (Deneor)
+    prepareFilters: { action: false, bonus: false, prepared: false }, // filtres propres à la page "Préparation de sorts" (Deneor)
     grimoirePrepareBackView: 'grimoire', // vue vers laquelle revenir depuis "Préparation de sorts"
     draftPreparedSpells: [], // copie de travail de profile().preparedSpells pendant "grimoire-prepare" ; seul "Valider" la répercute
     settingsLevelError: '',
@@ -672,17 +672,13 @@
           { name: "Serment des Anciens (préceptes)", type: "SERMENT", range: "—", desc: "Entretenir la lumière et repousser les ténèbres où qu'elles s'étendent ; nourrir la vie, la joie et la beauté du monde ; se délecter de l'art, du rire et de la nature ; protéger ce qui est précieux contre la destruction et la corruption.", note: "Préceptes du serment : un repère de roleplay, pas une règle mécanique." },
           { name: "Sens divin", type: "ACTION", range: "18m", desc: "Détecte la présence de célestes, fiélons ou morts-vivants non cachés pendant 1 round. Utilisations = 1 + mod. Cha.", note: "Recharge à chaque repos long. À utiliser en entrant dans une zone suspecte." },
           { name: "Imposition des mains", type: "ACTION", range: "Contact", desc: "Réserve de PV = niveau x 5. Restaure des PV au toucher, ou dépense 5 PV pour guérir une maladie ou un poison.", note: "Se recharge intégralement à chaque repos long ; répartir la réserve sur plusieurs cibles si besoin." },
-          { name: "Style de combat", type: "PASSIF", range: "–", desc: "Choix permanent à la création (Défense, Duel, Combat à deux armes...) donnant un bonus passif au combat.", note: "Le choix ne peut plus être changé ensuite : vérifier la cohérence avec l'équipement prévu." },
           { name: "Châtiment divin", type: "ACTION", range: "Contact", desc: "Dépense un emplacement de sort pour infliger 2d8 dégâts radiants supplémentaires (+1d8/niveau au-delà de 1, max 5d8) sur une attaque au corps à corps réussie. +1d8 si la cible est morte-vivante ou fiélon.", note: "À réserver aux coups importants : consomme un emplacement qui ne sert alors plus à lancer un sort." },
           { name: "Santé divine", type: "PASSIF", range: "–", desc: "Immunité totale aux maladies.", note: "Purement passif, aucune action requise." },
-          { name: "Attaque supplémentaire", type: "PASSIF", range: "–", desc: "Deux attaques au lieu d'une lors de l'action Attaquer, dès le niveau 5.", note: "Multiplie les occasions de déclencher Châtiment divin sur le même tour." },
           { name: "Aura de protection", type: "PASSIF", range: "3m (9m niv.18)", desc: "Le lanceur et les alliés proches gagnent un bonus aux jets de sauvegarde égal au mod. Cha (min. +1), tant que le lanceur n'est pas neutralisé.", note: "Dès le niveau 6. Se positionner au centre du groupe pour en faire profiter le plus d'alliés possible." },
           { name: "Aura de bravoure", type: "PASSIF", range: "3m (9m niv.18)", desc: "Le lanceur et les alliés proches sont immunisés à l'effroi tant que le lanceur reste conscient.", note: "Dès le niveau 10. Même portée et règles de cumul que l'Aura de protection : les deux se complètent naturellement." },
           { name: "Colère de la nature (Canalisation)", type: "ACTION", range: "3m", desc: "Des lianes spectrales entourent une créature visible. JS Force ou Dextérité (au choix de la cible) ou entravé ; nouveau JS à chaque fin de tour pour se libérer.", note: "1x par repos court ou long (partagé avec Repousser les infidèles). Bon contrôle d'une cible isolée." },
           { name: "Repousser les infidèles (Canalisation)", type: "ACTION", range: "9m", desc: "Chaque fée ou fiélon dans le rayon qui entend doit réussir un JS Sagesse ou fuir pendant 1 minute ou jusqu'à subir des dégâts.", note: "Très situationnel : n'affecte ni les morts-vivants ni les humanoïdes." },
-          { name: "Aura de protection contre la magie", type: "PASSIF", range: "3m (9m niv.18)", desc: "Le lanceur et ses alliés proches bénéficient d'une résistance aux dégâts infligés par les sorts.", note: "Dès le niveau 7. Purement passif : se positionner près du groupe avant le combat." },
-          { name: "Sentinelle increvable", type: "PASSIF", range: "Personnel", desc: "Si réduit à 0 PV sans être tué net, peut choisir de tomber à 1 PV à la place. Également immunisé au vieillissement magique.", note: "Dès le niveau 15, 1x par repos long. À garder comme filet de sécurité en fin de combat." },
-          { name: "Champion vénérable", type: "ACTION", range: "Personnel · 1 min", desc: "Transformation en avatar de la nature : regagne 10 PV au début de chaque tour, sorts de paladin castables en action bonus, ennemis proches en désavantage aux JS contre les sorts et la Canalisation Divine du lanceur.", note: "Capacité ultime de niveau 20, 1x par repos long : réserver aux affrontements décisifs." }
+          { name: "Aura de protection contre la magie", type: "PASSIF", range: "3m (9m niv.18)", desc: "Le lanceur et ses alliés proches bénéficient d'une résistance aux dégâts infligés par les sorts.", note: "Dès le niveau 7. Purement passif : se positionner près du groupe avant le combat." }
         ]
       }
     ]
@@ -951,17 +947,22 @@
 
   // Filtres de la page "Préparation de sorts" (Deneor) : pas de Réaction (aucun sort de ce type
   // dans sa liste) ni de Classe (les capacités de classe/serment ne sont pas préparables, elles
-  // n'apparaissent que dans le Grimoire normal).
+  // n'apparaissent que dans le Grimoire normal). "Préparé" est un filtre à part : il ne teste pas
+  // le type du sort mais sa présence dans le brouillon en cours (ui.draftPreparedSpells).
   var PREPARE_FILTERS = [
     { key: 'action', label: 'Action', prefix: 'ACTION', style: 'background:rgba(125,211,252,0.16);border:1px solid rgba(125,211,252,0.45);color:var(--accent-blue-text);' },
-    { key: 'bonus', label: 'Bonus', prefix: 'BONUS', style: 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);' }
+    { key: 'bonus', label: 'Bonus', prefix: 'BONUS', style: 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);' },
+    { key: 'prepared', label: 'Préparé', style: 'background:rgba(34,197,94,0.28);border:1px solid #22c55e;color:var(--accent-green-text);' }
   ];
 
   function spellMatchesPrepareTypeFilters(spell) {
     var activeFilters = PREPARE_FILTERS.filter(function (f) { return ui.prepareFilters[f.key]; });
     if (!activeFilters.length) return true;
     var t = spell.type.toUpperCase();
-    return activeFilters.some(function (f) { return t.indexOf(f.prefix) === 0; });
+    return activeFilters.some(function (f) {
+      if (f.key === 'prepared') return ui.draftPreparedSpells.indexOf(spell.name) !== -1;
+      return t.indexOf(f.prefix) === 0;
+    });
   }
 
   function renderGrimoireSection(section, spells, prepareMode) {
@@ -969,9 +970,12 @@
       var prepared = !!prepareMode && ui.draftPreparedSpells.indexOf(spell.name) !== -1;
       var clickable = !!prepareMode;
       return '<div ' + (clickable ? 'data-action="toggle-prepared-spell" data-name="' + escapeHtml(spell.name) + '"' : '') +
-        ' style="padding:11px 14px;background:' + (prepared ? 'rgba(var(--border-tint),0.16)' : (i % 2 ? 'var(--bg-card-alt)' : 'var(--bg-card)')) + ';border-bottom:1px solid rgba(var(--border-tint),0.14);' + (clickable ? 'cursor:pointer;' : '') + (prepared ? 'border-left:3px solid var(--border-strong);' : '') + '">' +
+        ' style="padding:11px 14px;background:' + (prepared ? 'rgba(34,197,94,0.14)' : (i % 2 ? 'var(--bg-card-alt)' : 'var(--bg-card)')) + ';border-bottom:1px solid rgba(var(--border-tint),0.14);' + (clickable ? 'cursor:pointer;' : '') + (prepared ? 'border-left:3px solid #22c55e;' : '') + '">' +
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
-          '<div style="font-size:14px;font-weight:700;color:var(--text-main);font-family:\'Cinzel\',serif">' + escapeHtml(spell.name) + '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;min-width:0">' +
+            (prepared ? '<div style="flex:none;width:16px;height:16px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center">' + ICON_CHECK + '</div>' : '') +
+            '<div style="font-size:14px;font-weight:700;color:var(--text-main);font-family:\'Cinzel\',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(spell.name) + '</div>' +
+          '</div>' +
           '<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px">' +
             '<div style="display:flex;align-items:center;gap:5px">' +
               '<div style="background:rgba(var(--border-tint),0.12);border:1px solid rgba(var(--border-tint),0.32);color:var(--text-chip);padding:2px 6px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap">' + escapeHtml(section.levelTag) + '</div>' +
@@ -991,14 +995,17 @@
     '</div>';
   }
 
-  function grimoireTabsHtml(tabs) {
+  function grimoireTabsHtml(tabs, dotLevels) {
     return tabs.map(function (tab) {
       var active = tab === ui.grimoireTab;
-      return '<div data-action="grimoire-tab" data-tab="' + tab + '" style="flex:none;min-width:38px;height:32px;padding:0 10px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;user-select:none;' +
+      var hasPrepared = !!(dotLevels && dotLevels[tab]);
+      return '<div data-action="grimoire-tab" data-tab="' + tab + '" style="position:relative;flex:none;min-width:38px;height:32px;padding:0 10px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;user-select:none;' +
         (active
           ? 'background:rgba(var(--border-tint),0.28);border:1px solid var(--border-strong);color:var(--text-gold);'
           : 'background:transparent;border:1px solid rgba(var(--border-tint),0.2);color:var(--text-dim);') +
-        '">' + escapeHtml(grimoireTabLabel(tab)) + '</div>';
+        '">' + escapeHtml(grimoireTabLabel(tab)) +
+        (hasPrepared ? '<div style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#22c55e;border:1px solid var(--bg-card)"></div>' : '') +
+        '</div>';
     }).join('');
   }
 
@@ -1007,7 +1014,7 @@
     ui.grimoireAnimDirection = null;
 
     var tabs = grimoireTabs();
-    if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = 0;
+    if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = tabs[0];
 
     var tabsHtml = grimoireTabsHtml(tabs);
 
@@ -1057,8 +1064,17 @@
     ui.grimoireAnimDirection = null;
 
     var tabs = grimoireTabs().filter(function (t) { return t !== 'classe'; });
-    if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = 0;
-    var tabsHtml = grimoireTabsHtml(tabs);
+    if (tabs.indexOf(ui.grimoireTab) === -1) ui.grimoireTab = tabs[0];
+    // Pastille verte sur les onglets contenant au moins un sort déjà préparé, pour repérer d'un
+    // coup d'oeil où se trouvent les sorts comptés dans le badge (qui totalise tous les niveaux).
+    var preparedLevels = {};
+    DENEOR_SPELLBOOK.sections.forEach(function (s) {
+      if (s.level === 'classe') return;
+      s.spells.forEach(function (spell) {
+        if (!spell.alwaysAvailable && ui.draftPreparedSpells.indexOf(spell.name) !== -1) preparedLevels[s.level] = true;
+      });
+    });
+    var tabsHtml = grimoireTabsHtml(tabs, preparedLevels);
 
     var filterChipsHtml = PREPARE_FILTERS.map(function (f) {
       var active = !!ui.prepareFilters[f.key];

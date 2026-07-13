@@ -96,8 +96,14 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    un onglet) déclenche une animation de glissement directionnelle sur `#grimoireSwipe`
    (`ui.grimoireAnimDirection`, classes CSS `grimoire-anim-next`/`-prev`, consommée une seule
    fois par `renderGrimoire()` pour ne pas se rejouer aux re-renders suivants). L'onglet actif
-   (`ui.grimoireTab`, état éphémère) est recalé sur 0 si le niveau affiché n'existe plus après
-   un changement de config dans Paramètres (ex. désactivation du niveau en cours de visionnage).
+   (`ui.grimoireTab`, état éphémère, vaut `0` par défaut en début de session) est recalé sur
+   `tabs[0]` (premier onglet réellement disponible, **pas** un `0` en dur) si le niveau affiché
+   n'existe plus parmi les onglets courants — que ce soit après un changement de config dans
+   Paramètres (ex. désactivation du niveau en cours de visionnage) ou simplement parce que `0`
+   n'est jamais un onglet valide chez Deneor (pas de sorts de niveau 0) : sans ce recalage sur
+   `tabs[0]`, le Grimoire de Deneor s'ouvrait sur un onglet invalide au premier chargement de
+   session et affichait "Aucun sort à ce niveau" malgré des sorts existants (bug corrigé
+   2026-07-13). Même logique dans `renderGrimoirePrepare()`.
    Filtres par type sur la même ligne que le titre "Grimoire", alignés à droite : Action / Bonus
    / Réaction (`GRIMOIRE_FILTERS`, chips `data-action="toggle-grimoire-filter"`). Plusieurs
    filtres actifs se combinent en OR (`spellMatchesGrimoireFilters()`) ; aucun filtre actif =
@@ -119,11 +125,20 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    uniquement les sorts préparables (`!spell.alwaysAvailable`) ; les sorts de serment toujours
    disponibles n'apparaissent jamais sur cette page non plus. Rendus par `renderGrimoireSection
    (section, spells, true)`, chaque sort toggle sa présence au tap
-   (`data-action="toggle-prepared-spell"`) avec une mise en évidence (bordure + fond teinté). Un
-   badge rond mis en valeur (fond plein, juste le chiffre) affiche le nombre de sorts sélectionnés
-   en haut à droite de l'en-tête. Filtres dédiés `PREPARE_FILTERS` (état `ui.prepareFilters`,
-   éphémère) : seulement Action / Bonus (pas de Réaction — aucun sort de ce type chez Deneor — ni
-   de Classe).
+   (`data-action="toggle-prepared-spell"`) avec une mise en évidence volontairement appuyée (fond
+   vert teinté, bordure gauche verte pleine, et un badge circulaire à coche à gauche du nom) car
+   la version précédente — un simple liseré `border-tint` — se distinguait trop peu du reste de
+   la liste. Un badge rond mis en valeur (fond plein, juste le chiffre) affiche le nombre total de
+   sorts sélectionnés (tous niveaux confondus) en haut à droite de l'en-tête ; comme la liste
+   affichée ne couvre que le niveau de l'onglet courant, une pastille verte est aussi ajoutée sur
+   chaque onglet de niveau contenant au moins un sort préparé (`grimoireTabsHtml(tabs, dotLevels)`,
+   paramètre optionnel calculé dans `renderGrimoirePrepare()` uniquement) pour repérer d'un coup
+   d'oeil où se trouvent les sorts comptés dans le badge. Filtres dédiés `PREPARE_FILTERS` (état
+   `ui.prepareFilters`, éphémère) : Action / Bonus (pas de Réaction — aucun sort de ce type chez
+   Deneor — ni de Classe), plus un filtre "Préparé" qui ne teste pas le type du sort mais sa
+   présence dans `ui.draftPreparedSpells` (traité à part de la correspondance par préfixe de type
+   dans `spellMatchesPrepareTypeFilters()`) ; combiné en OR avec Action/Bonus comme les autres
+   filtres du Grimoire.
    **Brouillon non destructif** : les sélections ne modifient pas directement
    `profile().preparedSpells` mais une copie de travail éphémère `ui.draftPreparedSpells`
    (initialisée à l'entrée sur la page, dans les trois points d'entrée ci-dessous). La flèche
