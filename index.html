@@ -96,6 +96,7 @@
     padding: max(20px, env(safe-area-inset-top) + 14px) max(18px, env(safe-area-inset-right) + 4px) max(16px, env(safe-area-inset-bottom) + 12px) max(18px, env(safe-area-inset-left) + 4px);
     display: flex;
     flex-direction: column;
+    touch-action: pan-y;
   }
   .font-cinzel { font-family: 'Cinzel', serif; }
   input::placeholder { color: var(--text-dim); }
@@ -465,7 +466,7 @@
     editingMax: false,
     editingTemp: false,
     shortRestOpen: false,
-    shortRestChecks: { hp: false, spells: false, tempHp: false, classResource: false },
+    shortRestChecks: { hp: false, spells: false, tempHp: false, classResource: false, counters: false },
     statsSearch: '',
     grimoireTab: 0, // niveau numérique (0..9) ou 'classe'
     grimoireAnimDirection: null, // 'next' | 'prev' | null — consommé une fois par renderGrimoire()/renderGrimoirePrepare()
@@ -1372,7 +1373,8 @@
       { key: 'hp', label: 'Restaurer les points de vie' },
       { key: 'spells', label: 'Rétablir les emplacements de sort' },
       { key: 'tempHp', label: 'Retirer les points de vie temporaires' },
-      { key: 'classResource', label: 'Restaurer les ressources de classe' }
+      { key: 'classResource', label: 'Restaurer les ressources de classe' },
+      { key: 'counters', label: 'Positionner les compteurs au maximum' }
     ];
     var rowsHtml = rows.map(function (r) {
       var checked = !!checks[r.key];
@@ -1892,7 +1894,7 @@
         break;
 
       case 'open-rest':
-        ui.shortRestChecks = { hp: false, spells: false, tempHp: false, classResource: false };
+        ui.shortRestChecks = { hp: false, spells: false, tempHp: false, classResource: false, counters: false };
         ui.shortRestOpen = true;
         render();
         break;
@@ -2034,14 +2036,20 @@
       if (vh > viewportMaxHeight) viewportMaxHeight = vh;
       app.style.height = vh + 'px';
       var keyboardLikelyClosed = vh >= viewportMaxHeight - 80;
-      if (keyboardLikelyClosed) {
-        // Filet de sécurité pour la page Personnage : sur certains claviers Android, fermer le
-        // clavier via son propre bouton ne déclenche pas de 'blur' sur le champ toujours focus —
-        // on force donc le retour du bloc Caractéristiques dès que le clavier semble refermé.
-        var statsAbilities = document.getElementById('statsAbilitiesBlock');
-        var statsReset = document.getElementById('statsResetBtn');
-        if (statsAbilities) statsAbilities.style.display = '';
-        if (statsReset) { statsReset.style.opacity = '0'; statsReset.style.pointerEvents = 'none'; }
+      // Page Personnage : le clavier virtuel fait foi, pas seulement le focus DOM du champ — sur
+      // certains claviers Android, le fermer via son propre bouton ne déclenche pas de 'blur' sur
+      // le champ toujours focus, et à l'inverse son ouverture doit masquer les Caractéristiques/
+      // afficher la croix même si le 'focus' n'a pas (encore) été détecté par ailleurs.
+      var statsAbilities = document.getElementById('statsAbilitiesBlock');
+      var statsReset = document.getElementById('statsResetBtn');
+      if (statsAbilities || statsReset) {
+        if (keyboardLikelyClosed) {
+          if (statsAbilities) statsAbilities.style.display = '';
+          if (statsReset) { statsReset.style.opacity = '0'; statsReset.style.pointerEvents = 'none'; }
+        } else {
+          if (statsAbilities) statsAbilities.style.display = 'none';
+          if (statsReset) { statsReset.style.opacity = '1'; statsReset.style.pointerEvents = 'auto'; }
+        }
       }
     };
     window.visualViewport.addEventListener('resize', applyVisualViewport);
@@ -2084,8 +2092,12 @@
     }
     if (checks.classResource) {
       p.classResources.forEach(function (cr) {
+        if (cr.type !== 'counter') cr.used = cr.used.map(function () { return false; });
+      });
+    }
+    if (checks.counters) {
+      p.classResources.forEach(function (cr) {
         if (cr.type === 'counter') cr.current = cr.max;
-        else cr.used = cr.used.map(function () { return false; });
       });
     }
   }
