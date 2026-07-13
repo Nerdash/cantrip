@@ -688,6 +688,20 @@
     return state.activeCharacterId === 'deneor' ? DENEOR_SPELLBOOK : SPELLBOOK;
   }
 
+  // Noms des sorts réellement préparables (hors sorts de serment "alwaysAvailable" et hors
+  // capacités de la section "classe", jamais préparables). Sert à assainir `preparedSpells` :
+  // un nom qui n'y figure plus (sort de serment, sort renommé/retiré du grimoire...) ne pourra
+  // plus jamais apparaître ni être décoché dans la page Préparation, mais restait compté dans le
+  // badge — un profil corrompu de cette façon affichait un compteur > 0 sans aucun sort visible.
+  function preparableSpellNames() {
+    var names = [];
+    DENEOR_SPELLBOOK.sections.forEach(function (s) {
+      if (s.level === 'classe') return;
+      s.spells.forEach(function (spell) { if (!spell.alwaysAvailable) names.push(spell.name); });
+    });
+    return names;
+  }
+
   function spellBadgeStyle(type) {
     var t = type.toUpperCase();
     if (t.indexOf('BONUS') === 0) return 'background:rgba(34,197,94,0.16);border:1px solid rgba(34,197,94,0.45);color:var(--accent-green-text);';
@@ -1934,6 +1948,12 @@
       case 'open-grimoire-prepare': {
         var prepareBack = e.currentTarget.getAttribute('data-back');
         ui.grimoirePrepareBackView = prepareBack || 'grimoire';
+        var validPrepareNames = preparableSpellNames();
+        var cleanedPreparedSpells = profile().preparedSpells.filter(function (n) { return validPrepareNames.indexOf(n) !== -1; });
+        if (cleanedPreparedSpells.length !== profile().preparedSpells.length) {
+          profile().preparedSpells = cleanedPreparedSpells;
+          saveState();
+        }
         ui.draftPreparedSpells = profile().preparedSpells.slice();
         ui.view = 'grimoire-prepare';
         render();
@@ -2018,14 +2038,32 @@
   // Swipe entre les pages Suivi et Personnage (adjacentes dans la bottom nav). Attaché une seule
   // fois sur #app (pas dans bindEvents, qui re-rendrait la page à chaque appel) ; ignore les swipes
   // démarrés dans une rangée .hscroll pour ne pas gêner le défilement horizontal des badges.
-  var mainSwipeStartX = 0, mainSwipeStartY = 0, mainSwipeActive = false, mainSwipeFromHscroll = false;
+  // `touch-action:pan-y` sur #app ne suffit pas à lui seul dans la zone `[data-scroll-root]`
+  // (emplacements de sorts/ressources, verticalement scrollable) : dès qu'un swipe démarré là a la
+  // moindre composante verticale initiale, le navigateur peut le happer comme un scroll natif et
+  // n'émet jamais de `pointerup` (juste un `pointercancel`), avant même que dx/dy soient testés. Le
+  // `pointermove` ci-dessous tranche donc la direction dès les ~10 premiers pixels et appelle
+  // `preventDefault()` dès qu'elle est horizontale, pour empêcher ce vol du geste par le scroll —
+  // sans jamais toucher aux gestes à dominante verticale, qui continuent de scroller normalement.
+  var mainSwipeStartX = 0, mainSwipeStartY = 0, mainSwipeActive = false, mainSwipeFromHscroll = false, mainSwipeDirection = null;
   app.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     mainSwipeStartX = e.clientX;
     mainSwipeStartY = e.clientY;
     mainSwipeActive = true;
+    mainSwipeDirection = null;
     mainSwipeFromHscroll = !!(e.target && e.target.closest && e.target.closest('.hscroll'));
   });
+  app.addEventListener('pointermove', function (e) {
+    if (!mainSwipeActive || mainSwipeFromHscroll) return;
+    if (ui.view !== 'tracker' && ui.view !== 'stats') return;
+    var dx = e.clientX - mainSwipeStartX;
+    var dy = e.clientY - mainSwipeStartY;
+    if (mainSwipeDirection === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      mainSwipeDirection = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+    }
+    if (mainSwipeDirection === 'horizontal') e.preventDefault();
+  }, { passive: false });
   app.addEventListener('pointerup', function (e) {
     if (!mainSwipeActive) return;
     mainSwipeActive = false;
@@ -2129,6 +2167,8 @@
     applyRestChecks();
     ui.shortRestOpen = false;
     ui.grimoirePrepareBackView = 'tracker';
+    var validPrepareNames = preparableSpellNames();
+    profile().preparedSpells = profile().preparedSpells.filter(function (n) { return validPrepareNames.indexOf(n) !== -1; });
     ui.draftPreparedSpells = profile().preparedSpells.slice();
     ui.view = 'grimoire-prepare';
     saveState();
