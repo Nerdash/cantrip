@@ -266,16 +266,108 @@
 
   var CHARACTER_ORDER = ['calix', 'deneor'];
 
-  function makeCharacter(id, name, subtitle, level, portrait, theme) {
-    var p = defaultProfile();
+  function calixDefaultProfile() {
+    return sanitizeProfile({
+      characterName: 'Calix Noctavel',
+      hp: { current: 42, max: 42, temp: 0 },
+      combatStats: { ac: 15, initiative: 3, speed: 9 },
+      spellLevels: [
+        { level: 1, enabled: true, max: 4, used: [false, false, false, false] },
+        { level: 2, enabled: true, max: 3, used: [false, false, false] },
+        { level: 3, enabled: true, max: 3, used: [false, false, false] },
+        { level: 4, enabled: true, max: 1, used: [false] },
+        { level: 5, enabled: false, max: 0, used: [] },
+        { level: 6, enabled: false, max: 0, used: [] },
+        { level: 7, enabled: false, max: 0, used: [] },
+        { level: 8, enabled: false, max: 0, used: [] },
+        { level: 9, enabled: false, max: 0, used: [] }
+      ],
+      classResources: [
+        { id: 'cr_calix_inspiration', label: 'Inspiration bardique', max: 4, used: [false, false, false, false] }
+      ],
+      concentration: false,
+      inspiration: true,
+      abilityScores: { force: -1, dexterite: 2, constitution: 1, intelligence: 2, sagesse: 1, charisme: 4 },
+      savingThrows: { force: 1, dexterite: 5, constitution: 1, intelligence: 2, sagesse: 1, charisme: 7 },
+      skills: [
+        { name: 'Acrobaties', modifier: 3 },
+        { name: 'Arcanes', modifier: 8 },
+        { name: 'Athlétisme', modifier: 0 },
+        { name: 'Discrétion', modifier: 3 },
+        { name: 'Dressage', modifier: 2 },
+        { name: 'Escamotage', modifier: 3 },
+        { name: 'Histoire', modifier: 8 },
+        { name: 'Intimidation', modifier: 5 },
+        { name: 'Intuition', modifier: 4 },
+        { name: 'Investigation', modifier: 5 },
+        { name: 'Médecine', modifier: 2 },
+        { name: 'Nature', modifier: 3 },
+        { name: 'Perception', modifier: 4 },
+        { name: 'Persuasion', modifier: 7 },
+        { name: 'Religion', modifier: 3 },
+        { name: 'Représentation', modifier: 5 },
+        { name: 'Survie', modifier: 2 },
+        { name: 'Tromperie', modifier: 5 }
+      ]
+    });
+  }
+
+  function deneorDefaultProfile() {
+    return sanitizeProfile({
+      characterName: 'Deneor Sentariel',
+      hp: { current: 73, max: 73, temp: 0 },
+      combatStats: { ac: 23, initiative: 4, speed: 9 },
+      spellLevels: [
+        { level: 1, enabled: true, max: 4, used: [false, false, false, false] },
+        { level: 2, enabled: true, max: 3, used: [false, false, false] },
+        { level: 3, enabled: false, max: 0, used: [] },
+        { level: 4, enabled: false, max: 0, used: [] },
+        { level: 5, enabled: false, max: 0, used: [] },
+        { level: 6, enabled: false, max: 0, used: [] },
+        { level: 7, enabled: false, max: 0, used: [] },
+        { level: 8, enabled: false, max: 0, used: [] },
+        { level: 9, enabled: false, max: 0, used: [] }
+      ],
+      classResources: [
+        { id: 'cr_deneor_conduit', label: 'Conduit divin', max: 1, used: [false] }
+      ],
+      concentration: false,
+      inspiration: false,
+      abilityScores: { force: 3, dexterite: -1, constitution: 2, intelligence: 0, sagesse: 1, charisme: 2 },
+      savingThrows: { force: 3, dexterite: -1, constitution: 2, intelligence: 0, sagesse: 4, charisme: 5 },
+      skills: [
+        { name: 'Acrobaties', modifier: -1 },
+        { name: 'Arcanes', modifier: 0 },
+        { name: 'Athlétisme', modifier: 6 },
+        { name: 'Discrétion', modifier: -1 },
+        { name: 'Dressage', modifier: 4 },
+        { name: 'Escamotage', modifier: -1 },
+        { name: 'Histoire', modifier: 0 },
+        { name: 'Intimidation', modifier: 3 },
+        { name: 'Intuition', modifier: 1 },
+        { name: 'Investigation', modifier: 3 },
+        { name: 'Médecine', modifier: 1 },
+        { name: 'Nature', modifier: 0 },
+        { name: 'Perception', modifier: 1 },
+        { name: 'Persuasion', modifier: 5 },
+        { name: 'Religion', modifier: 3 },
+        { name: 'Représentation', modifier: 3 },
+        { name: 'Survie', modifier: 4 },
+        { name: 'Tromperie', modifier: 3 }
+      ]
+    });
+  }
+
+  function makeCharacter(id, name, subtitle, level, portrait, theme, profile) {
+    var p = profile || defaultProfile();
     p.characterName = name;
     return { id: id, name: name, subtitle: subtitle, level: level, portrait: portrait, theme: theme, savedProfile: p };
   }
 
   function defaultCharacters() {
     return {
-      calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg', 'calix'),
-      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png', 'deneor')
+      calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg', 'calix', calixDefaultProfile()),
+      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous le Serment des Anciens', null, 'characters/deneor.png', 'deneor', deneorDefaultProfile())
     };
   }
 
