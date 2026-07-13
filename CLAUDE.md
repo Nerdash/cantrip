@@ -325,6 +325,21 @@ Le `<meta name="theme-color">` initial dans `<head>` et `background_color`/`them
 `manifest.json` reflètent la teinte Calix par défaut (`#ecdcb0`), puisque Calix reste le
 personnage chargé par défaut sur un état vierge.
 
+## Clavier virtuel mobile (`visualViewport`)
+
+`#app` est en `height:100dvh` (fallback `100vh`), et le meta viewport porte
+`interactive-widget=resizes-content` — mais sur certains navigateurs/OS (Safari iOS en
+particulier), l'ouverture du clavier virtuel ne redimensionne pas la layout viewport, ce qui
+masquerait les éléments `flex:none` en bas de page (boutons Annuler/Valider de Paramétrer le
+Personnage, "Repos"...) sous le clavier. Un listener global sur `window.visualViewport.resize`
+(attaché une seule fois en fin de script, à côté du swipe principal) recale `app.style.height` sur
+`visualViewport.height`, qui reflète toujours la zone réellement visible. Le même listener sert de
+filet de sécurité pour `#statsAbilitiesBlock`/`#statsResetBtn` (page Personnage) : si le clavier se
+referme sans déclencher de `blur` sur `#statsSearchInput` (arrive avec certains claviers Android
+via leur propre bouton de fermeture, qui ne retire pas toujours le focus DOM), la hauteur de
+viewport revenue proche de son maximum observé (`viewportMaxHeight`, mis à jour dynamiquement)
+force le retour du bloc Caractéristiques et le masquage de la croix de réinitialisation.
+
 ## Service Worker (`sw.js`)
 
 Stratégie réseau d'abord avec fallback cache (pas de stale-while-revalidate). `CACHE_NAME` est

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Cantrip</title>
 <meta name="theme-color" content="#ecdcb0">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2021,6 +2021,32 @@
     }
   });
   app.addEventListener('pointercancel', function () { mainSwipeActive = false; });
+
+  // Le clavier virtuel mobile ne redimensionne pas toujours la layout viewport (`100dvh` reste
+  // plein écran sur certains navigateurs/OS malgré le meta interactive-widget=resizes-content) :
+  // sans ça, les éléments flex:none en bas de page (boutons Annuler/Valider, Repos...) se
+  // retrouvent masqués sous le clavier. On recale #app sur la visualViewport (qui, elle, reflète
+  // toujours la zone réellement visible) à chaque ouverture/fermeture.
+  if (window.visualViewport) {
+    var viewportMaxHeight = window.visualViewport.height;
+    var applyVisualViewport = function () {
+      var vh = window.visualViewport.height;
+      if (vh > viewportMaxHeight) viewportMaxHeight = vh;
+      app.style.height = vh + 'px';
+      var keyboardLikelyClosed = vh >= viewportMaxHeight - 80;
+      if (keyboardLikelyClosed) {
+        // Filet de sécurité pour la page Personnage : sur certains claviers Android, fermer le
+        // clavier via son propre bouton ne déclenche pas de 'blur' sur le champ toujours focus —
+        // on force donc le retour du bloc Caractéristiques dès que le clavier semble refermé.
+        var statsAbilities = document.getElementById('statsAbilitiesBlock');
+        var statsReset = document.getElementById('statsResetBtn');
+        if (statsAbilities) statsAbilities.style.display = '';
+        if (statsReset) { statsReset.style.opacity = '0'; statsReset.style.pointerEvents = 'none'; }
+      }
+    };
+    window.visualViewport.addEventListener('resize', applyVisualViewport);
+    applyVisualViewport();
+  }
 
   function startEditMax() { ui.editingMax = true; render(); }
 
