@@ -51,20 +51,18 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
    pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
    violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
-   Swipe horizontal possible vers la page Personnage (voir juste en dessous) : listener
-   `pointerdown`/`pointerup` attaché une seule fois sur `#app` (hors `bindEvents()`, à côté du
-   listener `focusin`), qui ignore les swipes démarrés dans une rangée `.hscroll` (badges de sorts/
-   ressources) pour ne pas gêner leur défilement horizontal natif. Nécessite `touch-action:pan-y`
-   sur le conteneur racine de `renderTracker()`/`renderStats()` (sinon le navigateur mobile
-   intercepte le geste horizontal comme un scroll et n'émet jamais `pointerup`) et
-   `touch-action:pan-x` sur `.hscroll` pour rétablir son propre défilement horizontal malgré la
-   restriction héritée de l'ancêtre.
+   Pas de swipe entre Suivi et Personnage : un swipe horizontal (`pointerdown`/`pointermove`/
+   `pointerup` sur `#app`) a existé un temps mais a été retiré (2026-07-13) après plusieurs
+   itérations infructueuses — le geste était systématiquement happé par le scroll natif dès qu'il
+   démarrait dans une zone verticalement scrollable (`[data-scroll-root]`), même avec
+   `touch-action:pan-y` et un `preventDefault()` sur `pointermove`. Navigation entre ces deux
+   pages uniquement via la barre de navigation basse. Le scroll de `[data-scroll-root]` est le
+   scroll natif classique, sans aucune restriction `touch-action` particulière.
 2. **Personnage** (onglet nav, anciennement "Stats" ; le code interne — `renderStats()`,
    `ui.statsSearch`, `view: 'stats'` — garde le nom `stats`) — caractéristiques (6) et
    compétences (18, D&D 5e, noms français) en lecture seule, avec champ de recherche filtrant
    la liste en direct. Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
-   aucun modificateur). Accessible par swipe horizontal depuis/vers le Tracker (même mécanisme
-   que ci-dessus, symétrique).
+   aucun modificateur). Accessible uniquement via la barre de navigation basse, comme le Tracker.
    Le focus du champ de recherche masque volontairement le bloc "Caractéristiques"
    (`#statsAbilitiesBlock`, `style.display = 'none'`) pour laisser plus de place à la liste de
    compétences (et au clavier virtuel sur mobile) ; une croix (`#statsResetBtn`, en haut à droite,
@@ -347,7 +345,7 @@ personnage chargé par défaut sur un état vierge.
 particulier), l'ouverture du clavier virtuel ne redimensionne pas la layout viewport, ce qui
 masquerait les éléments `flex:none` en bas de page (boutons Annuler/Valider de Paramétrer le
 Personnage, "Repos"...) sous le clavier. Un listener global sur `window.visualViewport.resize`
-(attaché une seule fois en fin de script, à côté du swipe principal) recale `app.style.height` sur
+(attaché une seule fois en fin de script) recale `app.style.height` sur
 `visualViewport.height`, qui reflète toujours la zone réellement visible. Le même listener sert de
 filet de sécurité pour `#statsAbilitiesBlock`/`#statsResetBtn` (page Personnage) : si le clavier se
 referme sans déclencher de `blur` sur `#statsSearchInput` (arrive avec certains claviers Android

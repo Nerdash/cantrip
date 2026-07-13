@@ -96,7 +96,6 @@
     padding: max(20px, env(safe-area-inset-top) + 14px) max(18px, env(safe-area-inset-right) + 4px) max(16px, env(safe-area-inset-bottom) + 12px) max(18px, env(safe-area-inset-left) + 4px);
     display: flex;
     flex-direction: column;
-    touch-action: pan-y;
   }
   .font-cinzel { font-family: 'Cinzel', serif; }
   input::placeholder { color: var(--text-dim); }
@@ -832,7 +831,7 @@
     }).join('');
 
     return (
-      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;touch-action:pan-y">' +
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
           '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">' +
             (activeCharacter && activeCharacter.portrait ? '<img src="' + escapeHtml(activeCharacter.portrait) + '" alt="" style="flex:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid rgba(var(--border-tint),0.35)"/>' : '') +
@@ -913,7 +912,7 @@
       : '<div style="padding:16px;text-align:center;font-size:12px;color:var(--text-dim)">Aucune compétence trouvée.</div>';
 
     return (
-      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;position:relative;touch-action:pan-y">' +
+      '<div style="display:flex;flex-direction:column;height:100%;gap:14px;position:relative">' +
         '<div style="font-size:21px;font-weight:700;letter-spacing:0.3px;flex:none" class="font-cinzel">Personnage</div>' +
         '<input id="statsSearchInput" type="text" value="' + escapeHtml(search) + '" placeholder="Rechercher une compétence…" style="flex:none;height:52px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.24);border-radius:10px;color:var(--text-main);font-size:16px;padding:0 16px;box-sizing:border-box"/>' +
         '<div id="statsAbilitiesBlock" style="flex:none">' +
@@ -2034,49 +2033,6 @@
       e.target.select();
     }
   });
-
-  // Swipe entre les pages Suivi et Personnage (adjacentes dans la bottom nav). Attaché une seule
-  // fois sur #app (pas dans bindEvents, qui re-rendrait la page à chaque appel) ; ignore les swipes
-  // démarrés dans une rangée .hscroll pour ne pas gêner le défilement horizontal des badges.
-  // `touch-action:pan-y` sur #app ne suffit pas à lui seul dans la zone `[data-scroll-root]`
-  // (emplacements de sorts/ressources, verticalement scrollable) : dès qu'un swipe démarré là a la
-  // moindre composante verticale initiale, le navigateur peut le happer comme un scroll natif et
-  // n'émet jamais de `pointerup` (juste un `pointercancel`), avant même que dx/dy soient testés. Le
-  // `pointermove` ci-dessous tranche donc la direction dès les ~10 premiers pixels et appelle
-  // `preventDefault()` dès qu'elle est horizontale, pour empêcher ce vol du geste par le scroll —
-  // sans jamais toucher aux gestes à dominante verticale, qui continuent de scroller normalement.
-  var mainSwipeStartX = 0, mainSwipeStartY = 0, mainSwipeActive = false, mainSwipeFromHscroll = false, mainSwipeDirection = null;
-  app.addEventListener('pointerdown', function (e) {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    mainSwipeStartX = e.clientX;
-    mainSwipeStartY = e.clientY;
-    mainSwipeActive = true;
-    mainSwipeDirection = null;
-    mainSwipeFromHscroll = !!(e.target && e.target.closest && e.target.closest('.hscroll'));
-  });
-  app.addEventListener('pointermove', function (e) {
-    if (!mainSwipeActive || mainSwipeFromHscroll) return;
-    if (ui.view !== 'tracker' && ui.view !== 'stats') return;
-    var dx = e.clientX - mainSwipeStartX;
-    var dy = e.clientY - mainSwipeStartY;
-    if (mainSwipeDirection === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
-      mainSwipeDirection = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
-    }
-    if (mainSwipeDirection === 'horizontal') e.preventDefault();
-  }, { passive: false });
-  app.addEventListener('pointerup', function (e) {
-    if (!mainSwipeActive) return;
-    mainSwipeActive = false;
-    if (mainSwipeFromHscroll) return;
-    if (ui.view !== 'tracker' && ui.view !== 'stats') return;
-    var dx = e.clientX - mainSwipeStartX;
-    var dy = e.clientY - mainSwipeStartY;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (ui.view === 'tracker' && dx < 0) { ui.view = 'stats'; render(); }
-      else if (ui.view === 'stats' && dx > 0) { ui.view = 'tracker'; render(); }
-    }
-  });
-  app.addEventListener('pointercancel', function () { mainSwipeActive = false; });
 
   // Le clavier virtuel mobile ne redimensionne pas toujours la layout viewport (`100dvh` reste
   // plein écran sur certains navigateurs/OS malgré le meta interactive-widget=resizes-content) :
