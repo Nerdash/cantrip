@@ -54,20 +54,26 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    Swipe horizontal possible vers la page Personnage (voir juste en dessous) : listener
    `pointerdown`/`pointerup` attaché une seule fois sur `#app` (hors `bindEvents()`, à côté du
    listener `focusin`), qui ignore les swipes démarrés dans une rangée `.hscroll` (badges de sorts/
-   ressources) pour ne pas gêner leur défilement horizontal natif.
+   ressources) pour ne pas gêner leur défilement horizontal natif. Nécessite `touch-action:pan-y`
+   sur le conteneur racine de `renderTracker()`/`renderStats()` (sinon le navigateur mobile
+   intercepte le geste horizontal comme un scroll et n'émet jamais `pointerup`) et
+   `touch-action:pan-x` sur `.hscroll` pour rétablir son propre défilement horizontal malgré la
+   restriction héritée de l'ancêtre.
 2. **Personnage** (onglet nav, anciennement "Stats" ; le code interne — `renderStats()`,
    `ui.statsSearch`, `view: 'stats'` — garde le nom `stats`) — caractéristiques (6) et
    compétences (18, D&D 5e, noms français) en lecture seule, avec champ de recherche filtrant
    la liste en direct. Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
    aucun modificateur). Accessible par swipe horizontal depuis/vers le Tracker (même mécanisme
    que ci-dessus, symétrique).
-   Sur certains appareils, le clavier virtuel qui s'ouvre au focus du champ de recherche masque le
-   bloc "Caractéristiques". Une croix (`#statsResetBtn`, en haut à droite, `iconClose()`) apparaît
-   alors pour remettre la page à zéro (`data-action="reset-stats-view"` : vide `ui.statsSearch` et
-   appelle `.blur()` sur le champ). Sa visibilité est pilotée directement par des listeners
-   `focus`/`blur` sur `#statsSearchInput` qui togglent `style.opacity`/`pointerEvents`
-   **sans appeler `render()`** — un `render()` y recréerait l'input et le refocaliserait, ce qui
-   redéclencherait `focus` en boucle (même pattern que `#grimoirePrepareFab`).
+   Le focus du champ de recherche masque volontairement le bloc "Caractéristiques"
+   (`#statsAbilitiesBlock`, `style.display = 'none'`) pour laisser plus de place à la liste de
+   compétences (et au clavier virtuel sur mobile) ; une croix (`#statsResetBtn`, en haut à droite,
+   `iconClose()`) apparaît en même temps pour remettre la page à zéro
+   (`data-action="reset-stats-view"` : vide `ui.statsSearch` et appelle `.blur()` sur le champ).
+   Les deux sont pilotés directement par des listeners `focus`/`blur` sur `#statsSearchInput` qui
+   togglent leur style **sans appeler `render()`** — un `render()` y recréerait l'input et le
+   refocaliserait, ce qui redéclencherait `focus` en boucle (même pattern que
+   `#grimoirePrepareFab`).
 3. **Grimoire** — affiche les capacités du personnage (sorts par niveau + capacités de classe et
    dons), regroupées par section avec badge de type d'action coloré (Action/Bonus/Réaction/
    Rituel/Passif...), niveau, portée/durée et note d'usage en italique. Contenu **statique,
@@ -149,6 +155,20 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      ressources de classe, saisie des caractéristiques/compétences. Contenu en flux continu, sans
      titres de sous-section, séparé par de simples `<hr>` légers (`SETTINGS_SEPARATOR`) entre les
      blocs.
+     **Verrou d'édition** : la page démarre verrouillée (lecture seule, tous les champs `disabled`
+     ou `pointer-events:none`, valeurs affichées = `profile()`) avec un bouton "Modifier" en bas
+     (hors zone de scroll, `flex:none`, comme le "Repos" du Tracker). Le tap dessus
+     (`data-action="start-edit-character"`) clone le profil actif dans
+     `ui.settingsCharacterDraft` (`cloneDeep()`) et passe `ui.settingsCharacterEditing = true` :
+     tous les champs se déverrouillent et éditent ce brouillon via
+     `settingsCharacterProfile()` (= le brouillon si `ui.settingsCharacterEditing`, sinon
+     `profile()`) — aucun `saveState()` n'est appelé pendant l'édition. Le bouton "Modifier" est
+     remplacé par deux boutons fixes "Annuler"/"Valider" (même emplacement hors-scroll) :
+     "Annuler" (`cancel-edit-character`) abandonne le brouillon sans y toucher ; "Valider"
+     (`confirm-edit-character`) le passe dans `sanitizeProfile()` puis remplace
+     `state.profiles[state.activeProfileIndex]` par ce brouillon et appelle `saveState()`. Sortir
+     de la page en édition sans passer par l'un des deux (ex. flèche retour) déclenche le même
+     abandon que "Annuler", via un filet de sécurité dans le cas générique `'nav'` de `onAction()`.
      Les emplacements de sorts s'activent dans l'ordre croissant : impossible d'activer un niveau
      si un niveau inférieur est désactivé (message d'erreur `ui.settingsLevelError`, pas
      d'auto-activation en cascade). Désactiver un niveau qui a des niveaux supérieurs actifs ouvre
@@ -165,7 +185,9 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      - `'counter'` — un compteur `current`/`max` avec boutons −/+ (`data-action="counter-dec"`/
        `"counter-inc"`), même principe que les PV mais en plus petit, sans rangée de badges
        (`used` reste `[]`). `current` est clampé à `[0, max]` à chaque changement (inc/dec, édition
-       du max en Paramètres, migration `sanitizeProfile()`).
+       du max en Paramètres, migration `sanitizeProfile()`). Plafond de `max` différent selon le
+       type : 20 pour `badges` (déjà beaucoup à afficher en rangée de cases), 99 pour `counter`
+       (juste un nombre affiché, pas de limite d'affichage).
      Deux boutons "+ Ajouter une ressource" (`data-action="add-class-resource"`, type `badges`) et
      "+ Ajouter un compteur" (`data-action="add-class-counter"`, type `counter`), tous deux créés
      via `makeClassResource()`/`generateId()` ; un bouton de suppression par ligne
