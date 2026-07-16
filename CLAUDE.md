@@ -371,6 +371,35 @@ significatif des assets statiques** (`index.html`, `manifest.json`, `icon.svg`,
   push sur `preprod`, configuré depuis le dashboard Netlify (pas de `netlify.toml` dans le
   dépôt).
 
+## Outil admin Grimoire (`cantrip-admin-grimoire.html`)
+
+Page statique **indépendante** de l'app (pas de logique partagée, pas de `state` commun),
+ajoutée à la racine du dépôt et servie sur GitHub Pages à
+https://nerdash.github.io/cantrip/cantrip-admin-grimoire.html. Reproduit le rendu du Grimoire
+(thème, filtres, onglets de niveau) pour éditer les sorts de Calix et Deneor hors-app, avec
+sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`, indépendante de
+`jdr_character_tracker_state`).
+
+Deux façons de faire remonter les modifications dans `SPELLBOOK`/`DENEOR_SPELLBOOK`
+(`index.html`) :
+- **Manuelle** : bouton "Exporter le fichier" → JSON `{ calix: [...sections...], deneor: [...] }`
+  téléchargé (`cantrip-sorts-AAAA-MM-JJ.json`) à transmettre à Claude Code pour remplacement des
+  constantes + commit/push.
+- **Directe** (bouton "Publier sur GitHub") : commite directement sur `master` via l'API GitHub
+  Contents, sans passer par Claude Code. Nécessite un token GitHub (bouton "Token GitHub" — PAT
+  fine-grained scope repo `Nerdash/cantrip`, permission `Contents: Read and write` uniquement)
+  stocké dans le `localStorage` **du navigateur utilisé**, jamais transmis ailleurs qu'à
+  `api.github.com`. Comme le dépôt est public et l'outil accessible sans authentification, ce
+  choix expose une page avec un flux d'écriture sur `master` à qui la trouverait et disposerait
+  de son propre token — risque jugé acceptable (pas d'accès en écriture sans token valide,
+  chaque navigateur a le sien). Le remplacement des blocs `var SPELLBOOK = {...}` /
+  `var DENEOR_SPELLBOOK = {...}` dans `index.html` se fait par comptage d'accolades hors chaînes
+  (fonction `replaceVarBlock`, gère l'échappement dans les chaînes simples/doubles) plutôt que par
+  regex naïve, pour ne pas dépendre d'un format figé. Committe aussi une deuxième fois `sw.js` en
+  incrémentant `CACHE_NAME` (voir section Service Worker), pour respecter la convention déjà en
+  place. Token à créer une fois par navigateur/machine (pas de synchronisation entre le PC fixe et
+  le portable).
+
 ## Git — spécifique à cette machine, à reconfigurer sur toute nouvelle installation
 
 L'identité Git de ce dépôt est configurée **localement** (pas globalement), pour ne pas exposer

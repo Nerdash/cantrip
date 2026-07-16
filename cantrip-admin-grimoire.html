@@ -204,6 +204,8 @@
     <input type="file" id="importFileInput" accept="application/json" style="display:none;">
     <button class="btn primary" id="btnExportFile">Exporter le fichier</button>
     <button class="btn" id="btnGenCode">Voir le code JS</button>
+    <button class="btn" id="btnGithubToken">Token GitHub</button>
+    <button class="btn primary" id="btnPublishGithub">Publier sur GitHub</button>
   </div>
 </div>
 
@@ -221,10 +223,14 @@
   <div class="side-panel">
     <h2>Comment ça marche</h2>
     <p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Clique sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>
-    <p>Tes modifications sont sauvegardees automatiquement dans ce navigateur. Pour transmettre le resultat a Claude Code :</p>
-    <p><b>1.</b> Clique sur "Exporter le fichier" une fois tes sorts ajoutes/modifies.<br>
-    <b>2.</b> Donne le fichier telecharge a Claude Code avec l'instruction de mettre a jour SPELLBOOK et DENEOR_SPELLBOOK dans index.html, puis de commit/push.<br>
-    <b>3.</b> Pour continuer l'edition plus tard ou sur ton autre PC, utilise "Importer un fichier" avec ce meme export (ou un export precedent).</p>
+    <p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>
+    <p><b>Option A (directe) :</b> configure un token GitHub une fois ("Token GitHub"), puis clique
+    "Publier sur GitHub" pour committer directement SPELLBOOK/DENEOR_SPELLBOOK dans index.html sur
+    la branche master (mise a jour immediate de la prod GitHub Pages).</p>
+    <p><b>Option B (manuelle, sans token) :</b> clique "Exporter le fichier" et transmets le JSON
+    telecharge a Claude Code avec l'instruction de mettre a jour SPELLBOOK/DENEOR_SPELLBOOK dans
+    index.html, puis de commit/push. Utilise aussi "Importer un fichier" pour reprendre une
+    edition en cours sur ton autre PC.</p>
     <div class="actions">
       <button class="btn" id="btnAddLevel">Gerer les niveaux</button>
       <button class="btn" id="btnReset">Reinitialiser depuis les donnees actuelles de l'app</button>
@@ -338,6 +344,31 @@
       <div class="right">
         <button type="button" class="btn primary" id="btnCopyExport">Copier</button>
         <button type="button" class="btn" id="btnCloseExport">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: GitHub token -->
+<div class="modal-backdrop" id="tokenModalBackdrop">
+  <div class="modal" style="max-width:480px;">
+    <h3>Token GitHub</h3>
+    <p style="font-size:12.5px;color:var(--text-desc);margin-top:-8px;">
+      Cree un <b>Personal Access Token</b> GitHub de type <i>fine-grained</i>, limite au depot
+      <span class="mono">Nerdash/cantrip</span>, avec uniquement la permission
+      <b>Contents : Read and write</b>. Il est enregistre uniquement dans le stockage local de
+      <b>ce navigateur</b> et n'est jamais envoye ailleurs qu'a l'API GitHub (api.github.com).
+    </p>
+    <div class="field">
+      <label>Token</label>
+      <input type="password" id="gh_token" placeholder="github_pat_...">
+    </div>
+    <div class="sub" id="tokenStatus" style="margin-bottom:6px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn danger" id="btnClearToken">Supprimer le token</button>
+      <div class="right">
+        <button type="button" class="btn" id="btnCloseTokenModal">Fermer</button>
+        <button type="button" class="btn primary" id="btnSaveToken">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -911,6 +942,166 @@ document.getElementById('btnGenCode').addEventListener('click', function () {
   exportModalChar = ui.activeChar;
   renderExportArea();
   document.getElementById('exportModalBackdrop').classList.add('open');
+});
+
+// ---- publication directe sur GitHub (token cote client, jamais transmis ailleurs qu'a l'API GitHub) ----
+var GH_OWNER = 'Nerdash';
+var GH_REPO = 'cantrip';
+var GH_BRANCH = 'master';
+var GH_TOKEN_KEY = 'cantrip_admin_gh_token';
+
+function getGhToken() { return localStorage.getItem(GH_TOKEN_KEY) || ''; }
+function setGhToken(t) { localStorage.setItem(GH_TOKEN_KEY, t); }
+function clearGhToken() { localStorage.removeItem(GH_TOKEN_KEY); }
+
+function utf8ToB64(str) {
+  var bytes = new TextEncoder().encode(str);
+  var binary = '';
+  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function b64ToUtf8(b64) {
+  var binary = atob(b64.replace(/\n/g, ''));
+  var bytes = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+function ghHeaders() {
+  return {
+    'Authorization': 'Bearer ' + getGhToken(),
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+
+function ghGetFile(path) {
+  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
+    .then(function (res) {
+      if (!res.ok) return res.json().then(function (body) { throw new Error('Lecture de ' + path + ' : ' + res.status + ' ' + (body.message || res.statusText)); });
+      return res.json();
+    })
+    .then(function (json) { return { sha: json.sha, content: b64ToUtf8(json.content) }; });
+}
+
+function ghPutFile(path, content, sha, message) {
+  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders()),
+    body: JSON.stringify({ message: message, content: utf8ToB64(content), sha: sha, branch: GH_BRANCH })
+  }).then(function (res) {
+    if (!res.ok) return res.json().then(function (body) { throw new Error('Ecriture de ' + path + ' : ' + res.status + ' ' + (body.message || res.statusText)); });
+    return res.json();
+  });
+}
+
+// Remplace un bloc "  var NOM = { ... };" par un nouveau bloc de meme forme, en comptant les
+// accolades hors chaines (guillemets simples/doubles, avec gestion de l'echappement) pour ne
+// pas etre perturbe par un texte de sort qui contiendrait lui-meme des accolades.
+function replaceVarBlock(source, varName, newBlock) {
+  var marker = '  var ' + varName + ' = {';
+  var startIdx = source.indexOf(marker);
+  if (startIdx === -1) throw new Error('Bloc "' + varName + '" introuvable dans index.html');
+  var i = startIdx + marker.length - 1; // position du '{' d'ouverture
+  var depth = 0;
+  var inStr = null;
+  for (; i < source.length; i++) {
+    var ch = source[i];
+    if (inStr) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === inStr) inStr = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { inStr = ch; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) { i++; break; }
+    }
+  }
+  if (depth !== 0) throw new Error('Bloc "' + varName + '" mal forme (accolades non equilibrees)');
+  var endIdx = (source[i] === ';') ? i + 1 : i;
+  return source.slice(0, startIdx) + newBlock + source.slice(endIdx);
+}
+
+function bumpServiceWorkerCache(swSource) {
+  var m = swSource.match(/const CACHE_NAME = 'cantrip-v(\d+)';/);
+  if (!m) throw new Error('CACHE_NAME introuvable dans sw.js');
+  var next = parseInt(m[1], 10) + 1;
+  return swSource.replace(/const CACHE_NAME = 'cantrip-v\d+';/, "const CACHE_NAME = 'cantrip-v" + next + "';");
+}
+
+function updateTokenStatus() {
+  var el = document.getElementById('tokenStatus');
+  if (!el) return;
+  el.textContent = getGhToken() ? 'Un token est enregistre dans ce navigateur.' : 'Aucun token enregistre.';
+}
+
+document.getElementById('btnGithubToken').addEventListener('click', function () {
+  document.getElementById('gh_token').value = '';
+  updateTokenStatus();
+  document.getElementById('tokenModalBackdrop').classList.add('open');
+});
+document.getElementById('btnCloseTokenModal').addEventListener('click', function () {
+  document.getElementById('tokenModalBackdrop').classList.remove('open');
+});
+document.getElementById('tokenModalBackdrop').addEventListener('click', function (e) {
+  if (e.target.id === 'tokenModalBackdrop') document.getElementById('tokenModalBackdrop').classList.remove('open');
+});
+document.getElementById('btnSaveToken').addEventListener('click', function () {
+  var v = document.getElementById('gh_token').value.trim();
+  if (!v) { showToast('Colle un token avant d\'enregistrer', true); return; }
+  setGhToken(v);
+  document.getElementById('gh_token').value = '';
+  updateTokenStatus();
+  showToast('Token enregistre dans ce navigateur');
+});
+document.getElementById('btnClearToken').addEventListener('click', function () {
+  clearGhToken();
+  document.getElementById('gh_token').value = '';
+  updateTokenStatus();
+  showToast('Token supprime');
+});
+
+function publishToGithub() {
+  var btn = document.getElementById('btnPublishGithub');
+  var originalLabel = btn.textContent;
+  btn.textContent = 'Publication en cours...';
+  btn.disabled = true;
+
+  ghGetFile('index.html')
+    .then(function (file) {
+      var updated = replaceVarBlock(file.content, 'SPELLBOOK', exportCharCode('calix'));
+      updated = replaceVarBlock(updated, 'DENEOR_SPELLBOOK', exportCharCode('deneor'));
+      return ghPutFile('index.html', updated, file.sha, 'Mise a jour du Grimoire (sorts) via l\'outil admin');
+    })
+    .then(function () {
+      return ghGetFile('sw.js').then(function (file) {
+        var updated = bumpServiceWorkerCache(file.content);
+        return ghPutFile('sw.js', updated, file.sha, 'Invalide le cache du service worker suite a la mise a jour du Grimoire');
+      });
+    })
+    .then(function () {
+      showToast('Publie sur GitHub. La prod se mettra a jour dans la minute.');
+    })
+    .catch(function (err) {
+      showToast(err.message || 'Echec de la publication', true);
+    })
+    .finally(function () {
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+    });
+}
+
+document.getElementById('btnPublishGithub').addEventListener('click', function () {
+  if (!getGhToken()) {
+    showToast('Enregistre d\'abord un token GitHub', true);
+    updateTokenStatus();
+    document.getElementById('tokenModalBackdrop').classList.add('open');
+    return;
+  }
+  if (!confirm('Ceci va committer directement sur la branche "' + GH_BRANCH + '" et mettre a jour l\'application en production (GitHub Pages). Continuer ?')) return;
+  publishToGithub();
 });
 
 state = loadState();
