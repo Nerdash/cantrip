@@ -949,9 +949,16 @@
   function renderStats() {
     var p = profile();
     var search = ui.statsSearch || '';
-    var filteredSkills = p.skills.filter(function (s) {
-      return s.name.toLowerCase().indexOf(search.toLowerCase()) !== -1;
-    });
+    var searchLower = search.toLowerCase();
+    function skillMatchRank(name) {
+      var n = name.toLowerCase();
+      if (n === searchLower) return 0;
+      if (n.indexOf(searchLower) === 0) return 1;
+      return 2;
+    }
+    var filteredSkills = p.skills
+      .filter(function (s) { return s.name.toLowerCase().indexOf(searchLower) !== -1; })
+      .sort(function (a, b) { return skillMatchRank(a.name) - skillMatchRank(b.name); });
 
     var abilitiesHtml = ABILITY_KEYS.map(function (key) {
       return '<div style="position:relative;height:90px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:10px;overflow:hidden">' +
