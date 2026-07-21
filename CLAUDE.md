@@ -402,34 +402,45 @@ versionné (`cantrip-vNN`, voir `sw.js` pour la valeur actuelle) — **incrémen
   push sur `preprod`, configuré depuis le dashboard Netlify (pas de `netlify.toml` dans le
   dépôt).
 
-## Outil admin Grimoire (`cantrip-admin-grimoire.html`)
+## Outil admin (`cantrip-admin.html`)
 
 Page statique **indépendante** de l'app (pas de logique partagée, pas de `state` commun),
 ajoutée à la racine du dépôt et servie sur GitHub Pages à
-https://nerdash.github.io/cantrip/cantrip-admin-grimoire.html. Reproduit le rendu du Grimoire
-(thème, filtres, onglets de niveau) pour éditer les sorts de Calix et Deneor hors-app, avec
-sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`, indépendante de
-`jdr_character_tracker_state`).
+https://nerdash.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-admin-grimoire.html`
+(juillet 2026) quand l'outil s'est étendu de l'édition du Grimoire à celle des personnages
+(stats). Sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`,
+indépendante de `jdr_character_tracker_state`).
 
-Deux façons de faire remonter les modifications dans `SPELLBOOK`/`DENEOR_SPELLBOOK`
-(`index.html`) :
-- **Manuelle** : bouton "Exporter le fichier" → JSON `{ calix: [...sections...], deneor: [...] }`
-  téléchargé (`cantrip-sorts-AAAA-MM-JJ.json`) à transmettre à Claude Code pour remplacement des
-  constantes + commit/push.
-- **Directe** (bouton "Publier sur GitHub") : commite directement sur `master` via l'API GitHub
-  Contents, sans passer par Claude Code. Nécessite un token GitHub (bouton "Token GitHub" — PAT
-  fine-grained scope repo `Nerdash/cantrip`, permission `Contents: Read and write` uniquement)
-  stocké dans le `localStorage` **du navigateur utilisé**, jamais transmis ailleurs qu'à
-  `api.github.com`. Comme le dépôt est public et l'outil accessible sans authentification, ce
-  choix expose une page avec un flux d'écriture sur `master` à qui la trouverait et disposerait
-  de son propre token — risque jugé acceptable (pas d'accès en écriture sans token valide,
-  chaque navigateur a le sien). Le remplacement des blocs `var SPELLBOOK = {...}` /
-  `var DENEOR_SPELLBOOK = {...}` dans `index.html` se fait par comptage d'accolades hors chaînes
-  (fonction `replaceVarBlock`, gère l'échappement dans les chaînes simples/doubles) plutôt que par
-  regex naïve, pour ne pas dépendre d'un format figé. Committe aussi une deuxième fois `sw.js` en
-  incrémentant `CACHE_NAME` (voir section Service Worker), pour respecter la convention déjà en
-  place. Token à créer une fois par navigateur/machine (pas de synchronisation entre le PC fixe et
-  le portable).
+En haut de page : un menu déroulant pour choisir le personnage actif (Calix/Deneor, `#charSelect`),
+puis deux boutons de mode (`ui.mode`, `'personnage'` | `'grimoire'`) — **"Personnage"**
+en premier, **"Grimoire"** ensuite — qui affichent l'un ou l'autre panneau (`#personPanel` /
+`#phone`) sans jamais montrer les deux à la fois. Le panneau "Personnage" reproduit tout
+ce qui est éditable dans "Paramétrer le Personnage" en jeu (PV, Combat, Attaques, Emplacements de
+sorts, Ressources de classe, Caractéristiques, Jets de sauvegarde, Compétences, Sorts préparés pour
+Deneor, Or) ; le panneau "Grimoire" reproduit le rendu du Grimoire de l'app (thème, filtres,
+onglets de niveau) pour éditer les sorts. Édite le profil **par défaut** codé en dur
+(`calixDefaultProfile()`/`deneorDefaultProfile()` dans `index.html`), pas la sauvegarde
+localStorage d'un joueur en cours de partie.
+
+Pas d'import/export de fichier JSON ni de "voir le code JS" dans cet outil (retirés en juillet
+2026 pour simplifier — l'unique flux de publication passe par GitHub) : seul le bouton **"Publier
+sur GitHub"** fait remonter les modifications, en committant **à la fois** le Grimoire
+(`SPELLBOOK`/`DENEOR_SPELLBOOK`) et les deux personnages (`calixDefaultProfile`/
+`deneorDefaultProfile`) dans `index.html`, quel que soit le mode affiché à l'écran au moment du
+clic. Commite directement sur `master` via l'API GitHub Contents. Nécessite un token GitHub
+(bouton "Token GitHub" — PAT fine-grained scope repo `Nerdash/cantrip`, permission
+`Contents: Read and write` uniquement) stocké dans le `localStorage` **du navigateur utilisé**,
+jamais transmis ailleurs qu'à `api.github.com`. Comme le dépôt est public et l'outil accessible
+sans authentification, ce choix expose une page avec un flux d'écriture sur `master` à qui la
+trouverait et disposerait de son propre token — risque jugé acceptable (pas d'accès en écriture
+sans token valide, chaque navigateur a le sien). Le remplacement des blocs `var SPELLBOOK = {...}`
+/ `var DENEOR_SPELLBOOK = {...}` et des objets littéraux passés à `sanitizeProfile({...})` dans
+`calixDefaultProfile()`/`deneorDefaultProfile()` se fait par comptage d'accolades hors chaînes
+(fonctions `replaceVarBlock`/`replaceProfileBlock`, gèrent l'échappement dans les chaînes
+simples/doubles) plutôt que par regex naïve, pour ne pas dépendre d'un format figé. Committe aussi
+une deuxième fois `sw.js` en incrémentant `CACHE_NAME` (voir section Service Worker), pour
+respecter la convention déjà en place. Token à créer une fois par navigateur/machine (pas de
+synchronisation entre le PC fixe et le portable).
 
 ## Git — spécifique à cette machine, à reconfigurer sur toute nouvelle installation
 

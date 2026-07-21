@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cantrip - Admin Grimoire</title>
+<title>Cantrip - Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -81,12 +81,10 @@
   }
   .topbar h1{font-size:19px;margin:0;letter-spacing:0.02em;color:var(--text-gold);}
   .topbar .sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
-  .char-switch{display:flex;gap:6px;background:rgba(var(--border-tint),0.12);padding:4px;border-radius:10px;}
-  .char-switch button{
-    border:none;background:transparent;padding:8px 14px;border-radius:7px;cursor:pointer;
-    font-size:13px;font-weight:600;color:var(--text-label);font-family:inherit;
+  .char-select{
+    border:1px solid var(--border-strong);background:var(--bg-card);color:var(--text-main);
+    padding:9px 30px 9px 14px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;
   }
-  .char-switch button.active{background:var(--border-strong);color:var(--ink-bright);}
   .btn{
     border:1px solid var(--border-strong);background:transparent;color:var(--text-gold);
     padding:9px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;
@@ -158,6 +156,37 @@
     cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.35);font-size:26px;font-weight:400;border:none;
   }
 
+  .toggle-track{width:40px;height:24px;border-radius:12px;position:relative;cursor:pointer;flex:none;transition:background 150ms;}
+  .toggle-knob{width:18px;height:18px;border-radius:9px;background:var(--ink-bright);position:absolute;top:3px;transition:left 150ms;}
+
+  .person-panel{
+    width:480px;max-width:100%;flex:none;
+    background:
+      linear-gradient(160deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%),
+      repeating-linear-gradient(45deg, var(--bg-texture) 0px, var(--bg-texture) 2px, transparent 2px, transparent 7px);
+    border-radius:22px;
+    border:6px solid #2a2018;
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+    padding:20px 16px 24px;
+    min-height:640px;
+    max-height:82vh;
+    overflow-y:auto;
+    display:flex;flex-direction:column;gap:16px;
+  }
+  .person-panel .psec{display:flex;flex-direction:column;gap:6px;flex:none;}
+  .person-panel .psec-label{font-size:11px;color:var(--text-label);text-transform:uppercase;letter-spacing:0.06em;}
+  .person-panel .pcard{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(var(--border-tint),0.2);}
+  .person-panel .prow{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg-card);border-bottom:1px solid rgba(var(--border-tint),0.14);}
+  .person-panel .pgrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(var(--border-tint),0.2);}
+  .person-panel .pfield{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .person-panel .pfield label{font-size:11px;color:var(--text-muted);text-align:center;}
+  .person-panel input[type=text].pnum, .person-panel input[type=text].psigned{width:100%;height:44px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:15px;text-align:center;box-sizing:border-box;font-family:inherit;}
+  .person-panel .padd{height:44px;border-radius:10px;background:var(--bg-card);border:1px dashed rgba(var(--border-tint),0.4);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;}
+  .person-panel .premove{flex:none;width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;}
+  .person-panel .preorder{flex:none;display:flex;flex-direction:column;gap:2px;}
+  .person-panel .preorder div{width:22px;height:17px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.3);color:var(--text-muted);font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;}
+  .person-title{font-size:21px;font-weight:700;letter-spacing:0.3px;color:var(--text-main);}
+
   .side-panel{width:320px;flex:none;background:var(--admin-panel);border:1px solid rgba(var(--border-tint),0.3);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;}
   .side-panel h2{font-size:15px;margin:0;color:var(--text-gold);font-family:'Cinzel',serif;}
   .side-panel p{font-size:12.5px;color:var(--text-desc);line-height:1.5;margin:0;}
@@ -184,26 +213,19 @@
   .modal-actions{display:flex;justify-content:space-between;gap:10px;margin-top:18px;border-top:1px solid rgba(var(--border-tint),0.25);padding-top:16px;}
   .modal-actions .right{display:flex;gap:8px;}
 
-  .export-tabs{display:flex;gap:6px;margin-bottom:10px;}
-  .export-tabs button{flex:1;}
-  #exportArea{width:100%;min-height:280px;font-size:11.5px;background:#171209;color:#efe4cf;border-radius:8px;padding:14px;border:1px solid rgba(var(--border-tint),0.3);white-space:pre;overflow:auto;}
-
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--border-strong);color:var(--ink-bright);padding:10px 20px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:100;}
   .toast.show{opacity:1;}
 </style>
 </head>
-<body data-theme="calix">
+<body>
 <div class="topbar">
   <div>
-    <h1 class="font-cinzel">Cantrip - Admin Grimoire</h1>
-    <div class="sub" id="fileStatus">Fichier a transmettre a Claude Code pour mise a jour et push Git</div>
+    <h1 class="font-cinzel">Cantrip - Admin</h1>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <div class="char-switch" id="charSwitch"></div>
-    <button class="btn" id="btnImportFile">Importer un fichier</button>
-    <input type="file" id="importFileInput" accept="application/json" style="display:none;">
-    <button class="btn primary" id="btnExportFile">Exporter le fichier</button>
-    <button class="btn" id="btnGenCode">Voir le code JS</button>
+    <select class="char-select" id="charSelect"></select>
+    <button class="btn" id="btnModePersonnage">Personnage</button>
+    <button class="btn" id="btnModeGrimoire">Grimoire</button>
     <button class="btn" id="btnGithubToken">Token GitHub</button>
     <button class="btn primary" id="btnPublishGithub">Publier sur GitHub</button>
   </div>
@@ -217,24 +239,19 @@
     </div>
     <div class="hscroll" id="levelTabs"></div>
     <div class="spell-scroll" id="spellScroll"></div>
-    <button class="fab" id="fabAdd" title="Ajouter un sort">+</button>
+    <button class="fab" id="fabAdd" title="Ajouter un sort">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:block;">
+        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
 
+  <div class="person-panel" id="personPanel" style="display:none;"></div>
+
   <div class="side-panel">
-    <h2>Comment ça marche</h2>
-    <p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Clique sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>
-    <p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>
-    <p><b>Option A (directe) :</b> configure un token GitHub une fois ("Token GitHub"), puis clique
-    "Publier sur GitHub" pour committer directement SPELLBOOK/DENEOR_SPELLBOOK dans index.html sur
-    la branche master (mise a jour immediate de la prod GitHub Pages).</p>
-    <p><b>Option B (manuelle, sans token) :</b> clique "Exporter le fichier" et transmets le JSON
-    telecharge a Claude Code avec l'instruction de mettre a jour SPELLBOOK/DENEOR_SPELLBOOK dans
-    index.html, puis de commit/push. Utilise aussi "Importer un fichier" pour reprendre une
-    edition en cours sur ton autre PC.</p>
-    <div class="actions">
-      <button class="btn" id="btnAddLevel">Gerer les niveaux</button>
-      <button class="btn" id="btnReset">Reinitialiser depuis les donnees actuelles de l'app</button>
-    </div>
+    <h2 id="sidePanelTitle">Comment ça marche</h2>
+    <div id="sidePanelBody"></div>
+    <div class="actions" id="sidePanelActions"></div>
   </div>
 </div>
 
@@ -325,26 +342,6 @@
     <div class="modal-actions">
       <div></div>
       <div class="right"><button type="button" class="btn" id="btnCloseLevelModal">Fermer</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: export -->
-<div class="modal-backdrop" id="exportModalBackdrop">
-  <div class="modal" style="max-width:680px;">
-    <h3>Exporter le code</h3>
-    <p style="font-size:12.5px;color:var(--text-desc);margin-top:-8px;">Copie ce bloc et remplace la constante correspondante dans <span class="mono">index.html</span> (ou transmets-le a Claude Code avec l'instruction de remplacement).</p>
-    <div class="export-tabs">
-      <button class="btn" id="expTabCalix">Calix Noctavel</button>
-      <button class="btn" id="expTabDeneor">Deneor Sentariel</button>
-    </div>
-    <textarea id="exportArea" readonly></textarea>
-    <div class="modal-actions">
-      <button type="button" class="btn" id="btnDownloadExport">Telecharger (.js)</button>
-      <div class="right">
-        <button type="button" class="btn primary" id="btnCopyExport">Copier</button>
-        <button type="button" class="btn" id="btnCloseExport">Fermer</button>
-      </div>
     </div>
   </div>
 </div>
@@ -517,17 +514,219 @@ var STORAGE_KEY = 'cantrip_admin_grimoire_v1';
   };
 
 
+// ---- seed profiles (copie exacte de calixDefaultProfile()/deneorDefaultProfile() dans index.html,
+// sans les tableaux used[]/current qui sont toujours dérivés de max au moment de l'export : un
+// profil par défaut démarre toujours "frais" (rien d'utilisé)) ----
+var CHARACTER_NAMES = { calix: 'Calix Noctavel', deneor: 'Deneor Sentariel' };
+var ABILITY_KEYS = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme'];
+var ABILITY_LABELS = { force: 'Force', dexterite: 'Dextérité', constitution: 'Constitution', intelligence: 'Intelligence', sagesse: 'Sagesse', charisme: 'Charisme' };
+var SKILL_NAMES = ['Acrobaties', 'Arcanes', 'Athlétisme', 'Discrétion', 'Dressage', 'Escamotage', 'Histoire', 'Intimidation', 'Intuition', 'Investigation', 'Médecine', 'Nature', 'Perception', 'Persuasion', 'Religion', 'Représentation', 'Survie', 'Tromperie'];
+
+function generateAdminId() {
+  return 'cr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function toInt(v, fallback) {
+  var n = parseInt(String(v).replace(/[^0-9-]/g, ''), 10);
+  return isNaN(n) ? fallback : n;
+}
+function formatSigned(v) { return (v >= 0 ? '+' : '') + v; }
+
+function defaultSpellLevelsAdmin() {
+  var levels = [];
+  for (var i = 1; i <= 9; i++) levels.push({ level: i, enabled: false, max: 0 });
+  return levels;
+}
+function defaultAbilityMapAdmin() {
+  var m = {};
+  ABILITY_KEYS.forEach(function (k) { m[k] = 0; });
+  return m;
+}
+function defaultSkillsAdmin() {
+  return SKILL_NAMES.map(function (name) { return { name: name, modifier: 0 }; });
+}
+
+var SEED_PROFILES = {
+  calix: {
+    hp: { current: 42, max: 42, temp: 0 },
+    combatStats: { ac: 15, initiative: 3, speed: 9 },
+    concentration: false,
+    inspiration: true,
+    attacks: [],
+    spellLevels: [
+      { level: 1, enabled: true, max: 4 },
+      { level: 2, enabled: true, max: 3 },
+      { level: 3, enabled: true, max: 3 },
+      { level: 4, enabled: true, max: 1 },
+      { level: 5, enabled: false, max: 0 },
+      { level: 6, enabled: false, max: 0 },
+      { level: 7, enabled: false, max: 0 },
+      { level: 8, enabled: false, max: 0 },
+      { level: 9, enabled: false, max: 0 }
+    ],
+    classResources: [
+      { id: 'cr_calix_inspiration', label: 'Inspiration bardique', max: 4, type: 'badges' }
+    ],
+    abilityScores: { force: -1, dexterite: 2, constitution: 1, intelligence: 2, sagesse: 1, charisme: 4 },
+    savingThrows: { force: 1, dexterite: 5, constitution: 1, intelligence: 2, sagesse: 1, charisme: 7 },
+    skills: [
+      { name: 'Acrobaties', modifier: 3 },
+      { name: 'Arcanes', modifier: 8 },
+      { name: 'Athlétisme', modifier: 0 },
+      { name: 'Discrétion', modifier: 3 },
+      { name: 'Dressage', modifier: 2 },
+      { name: 'Escamotage', modifier: 3 },
+      { name: 'Histoire', modifier: 8 },
+      { name: 'Intimidation', modifier: 5 },
+      { name: 'Intuition', modifier: 4 },
+      { name: 'Investigation', modifier: 5 },
+      { name: 'Médecine', modifier: 2 },
+      { name: 'Nature', modifier: 3 },
+      { name: 'Perception', modifier: 4 },
+      { name: 'Persuasion', modifier: 7 },
+      { name: 'Religion', modifier: 3 },
+      { name: 'Représentation', modifier: 5 },
+      { name: 'Survie', modifier: 2 },
+      { name: 'Tromperie', modifier: 5 }
+    ],
+    preparedSpells: [],
+    gold: 0
+  },
+  deneor: {
+    hp: { current: 73, max: 73, temp: 0 },
+    combatStats: { ac: 23, initiative: 4, speed: 9 },
+    concentration: false,
+    inspiration: false,
+    attacks: [],
+    spellLevels: [
+      { level: 1, enabled: true, max: 4 },
+      { level: 2, enabled: true, max: 3 },
+      { level: 3, enabled: false, max: 0 },
+      { level: 4, enabled: false, max: 0 },
+      { level: 5, enabled: false, max: 0 },
+      { level: 6, enabled: false, max: 0 },
+      { level: 7, enabled: false, max: 0 },
+      { level: 8, enabled: false, max: 0 },
+      { level: 9, enabled: false, max: 0 }
+    ],
+    classResources: [
+      { id: 'cr_deneor_conduit', label: 'Conduit divin', max: 1, type: 'badges' }
+    ],
+    abilityScores: { force: 3, dexterite: -1, constitution: 2, intelligence: 0, sagesse: 1, charisme: 2 },
+    savingThrows: { force: 3, dexterite: -1, constitution: 2, intelligence: 0, sagesse: 4, charisme: 5 },
+    skills: [
+      { name: 'Acrobaties', modifier: -1 },
+      { name: 'Arcanes', modifier: 0 },
+      { name: 'Athlétisme', modifier: 6 },
+      { name: 'Discrétion', modifier: -1 },
+      { name: 'Dressage', modifier: 4 },
+      { name: 'Escamotage', modifier: -1 },
+      { name: 'Histoire', modifier: 0 },
+      { name: 'Intimidation', modifier: 3 },
+      { name: 'Intuition', modifier: 1 },
+      { name: 'Investigation', modifier: 3 },
+      { name: 'Médecine', modifier: 1 },
+      { name: 'Nature', modifier: 0 },
+      { name: 'Perception', modifier: 1 },
+      { name: 'Persuasion', modifier: 5 },
+      { name: 'Religion', modifier: 3 },
+      { name: 'Représentation', modifier: 3 },
+      { name: 'Survie', modifier: 4 },
+      { name: 'Tromperie', modifier: 3 }
+    ],
+    preparedSpells: [
+      'Bouclier de la foi', 'Cérémonie', 'Châtiment calcinant', 'Châtiment courroucé',
+      'Châtiment tonitruant', 'Détection de la magie', 'Détection du mal et du bien'
+    ],
+    gold: 0
+  }
+};
+
+function cloneSeedProfiles() {
+  return {
+    calix: JSON.parse(JSON.stringify(SEED_PROFILES.calix)),
+    deneor: JSON.parse(JSON.stringify(SEED_PROFILES.deneor))
+  };
+}
+
+// Comble/valide un profil (venant d'un import JSON ou d'une ancienne sauvegarde locale de
+// l'outil) sans dépendre de l'app : version allégée de sanitizeProfile() dans index.html (pas de
+// used[]/current, dérivés à l'export uniquement).
+function sanitizeAdminProfile(p) {
+  if (!p || typeof p !== 'object') p = {};
+  if (!p.hp || typeof p.hp !== 'object') p.hp = { current: 10, max: 10, temp: 0 };
+  if (typeof p.hp.max !== 'number' || isNaN(p.hp.max)) p.hp.max = 10;
+  p.hp.max = clamp(p.hp.max, 0, 999);
+  if (typeof p.hp.current !== 'number' || isNaN(p.hp.current)) p.hp.current = p.hp.max;
+  p.hp.current = clamp(p.hp.current, 0, p.hp.max);
+  if (typeof p.hp.temp !== 'number' || isNaN(p.hp.temp)) p.hp.temp = 0;
+  p.hp.temp = clamp(p.hp.temp, 0, 999);
+  if (!p.combatStats || typeof p.combatStats !== 'object') p.combatStats = { ac: 10, initiative: 0, speed: 9 };
+  if (typeof p.combatStats.ac !== 'number' || isNaN(p.combatStats.ac)) p.combatStats.ac = 10;
+  if (typeof p.combatStats.initiative !== 'number' || isNaN(p.combatStats.initiative)) p.combatStats.initiative = 0;
+  if (typeof p.combatStats.speed !== 'number' || isNaN(p.combatStats.speed)) p.combatStats.speed = 9;
+  if (typeof p.concentration !== 'boolean') p.concentration = false;
+  if (typeof p.inspiration !== 'boolean') p.inspiration = false;
+  if (!Array.isArray(p.attacks)) p.attacks = [];
+  p.attacks.forEach(function (atk) {
+    if (typeof atk.id !== 'string' || !atk.id) atk.id = generateAdminId();
+    if (typeof atk.name !== 'string') atk.name = 'Arme';
+    if (typeof atk.melee !== 'boolean') atk.melee = true;
+    if (typeof atk.rangeMeters !== 'number' || isNaN(atk.rangeMeters)) atk.rangeMeters = 0;
+    atk.rangeMeters = clamp(Math.round(atk.rangeMeters), 0, 999);
+    if (typeof atk.attackBonus !== 'number' || isNaN(atk.attackBonus)) atk.attackBonus = 0;
+    atk.attackBonus = clamp(Math.round(atk.attackBonus), -99, 99);
+    if (typeof atk.damageDice !== 'string') atk.damageDice = '';
+    if (typeof atk.damageBonus !== 'number' || isNaN(atk.damageBonus)) atk.damageBonus = 0;
+    atk.damageBonus = clamp(Math.round(atk.damageBonus), -99, 99);
+    if (typeof atk.damageType !== 'string') atk.damageType = '';
+  });
+  if (!Array.isArray(p.spellLevels) || p.spellLevels.length !== 9) p.spellLevels = defaultSpellLevelsAdmin();
+  else p.spellLevels.forEach(function (l, i) {
+    if (typeof l.level !== 'number') l.level = i + 1;
+    if (typeof l.enabled !== 'boolean') l.enabled = false;
+    if (typeof l.max !== 'number' || isNaN(l.max)) l.max = 0;
+    l.max = clamp(l.max, 0, 12);
+  });
+  if (!Array.isArray(p.classResources)) p.classResources = [];
+  p.classResources.forEach(function (cr) {
+    if (typeof cr.id !== 'string' || !cr.id) cr.id = generateAdminId();
+    if (typeof cr.label !== 'string') cr.label = 'Ressource de Classe';
+    if (typeof cr.max !== 'number' || isNaN(cr.max)) cr.max = 0;
+    if (cr.type !== 'counter') cr.type = 'badges';
+    cr.max = clamp(cr.max, 0, cr.type === 'counter' ? 99 : 20);
+  });
+  if (!p.abilityScores || typeof p.abilityScores !== 'object') p.abilityScores = defaultAbilityMapAdmin();
+  ABILITY_KEYS.forEach(function (k) { if (typeof p.abilityScores[k] !== 'number' || isNaN(p.abilityScores[k])) p.abilityScores[k] = 0; });
+  if (!p.savingThrows || typeof p.savingThrows !== 'object') p.savingThrows = defaultAbilityMapAdmin();
+  ABILITY_KEYS.forEach(function (k) { if (typeof p.savingThrows[k] !== 'number' || isNaN(p.savingThrows[k])) p.savingThrows[k] = 0; });
+  if (!Array.isArray(p.skills) || p.skills.length !== SKILL_NAMES.length) p.skills = defaultSkillsAdmin();
+  else p.skills.forEach(function (s, i) {
+    s.name = SKILL_NAMES[i];
+    if (typeof s.modifier !== 'number' || isNaN(s.modifier)) s.modifier = 0;
+    s.modifier = clamp(s.modifier, -99, 99);
+  });
+  if (!Array.isArray(p.preparedSpells)) p.preparedSpells = [];
+  else p.preparedSpells = p.preparedSpells.filter(function (n) { return typeof n === 'string'; });
+  if (typeof p.gold !== 'number' || isNaN(p.gold)) p.gold = 0;
+  p.gold = clamp(Math.round(p.gold), 0, 10000);
+  return p;
+}
+
 // ---- state ----
 var ui = {
+  mode: 'grimoire', // 'grimoire' | 'personnage'
   activeChar: 'calix', // 'calix' | 'deneor'
   activeLevel: null,
-  filters: { action: false, bonus: false, reaction: false }
+  filters: { action: false, bonus: false, reaction: false },
+  levelError: '' // message d'erreur d'activation d'un emplacement de sorts (mode Personnage)
 };
 
 function cloneSeed() {
   return {
     calix: JSON.parse(JSON.stringify(SEED_CALIX)).sections,
-    deneor: JSON.parse(JSON.stringify(SEED_DENEOR)).sections
+    deneor: JSON.parse(JSON.stringify(SEED_DENEOR)).sections,
+    profiles: cloneSeedProfiles()
   };
 }
 
@@ -535,7 +734,18 @@ var state;
 function loadState() {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (!parsed.profiles || typeof parsed.profiles !== 'object') {
+        parsed.profiles = cloneSeedProfiles();
+      } else {
+        ['calix', 'deneor'].forEach(function (c) {
+          if (!parsed.profiles[c] || typeof parsed.profiles[c] !== 'object') parsed.profiles[c] = cloneSeedProfiles()[c];
+          else sanitizeAdminProfile(parsed.profiles[c]);
+        });
+      }
+      return parsed;
+    }
   } catch (e) {}
   return cloneSeed();
 }
@@ -545,6 +755,7 @@ function saveState() {
 
 function charLabel(c) { return c === 'deneor' ? 'Deneor Sentariel' : 'Calix Noctavel'; }
 function activeSections() { return state[ui.activeChar]; }
+function personProfile() { return state.profiles[ui.activeChar]; }
 
 function levelOrder(sections) {
   var nums = sections.filter(function (s) { return s.level !== 'classe'; }).map(function (s) { return s.level; }).sort(function (a, b) { return a - b; });
@@ -589,16 +800,28 @@ function levelTabLabel(level) { return level === 'classe' ? 'Classe' : String(le
 
 // ---- render ----
 function render() {
-  document.body.setAttribute('data-theme', ui.activeChar === 'deneor' ? 'deneor' : 'calix');
+  document.documentElement.setAttribute('data-theme', ui.activeChar === 'deneor' ? 'deneor' : 'calix');
 
-  // character switch
-  var cs = document.getElementById('charSwitch');
-  cs.innerHTML = ['calix', 'deneor'].map(function (c) {
-    return '<button data-char="' + c + '" class="' + (ui.activeChar === c ? 'active' : '') + '">' + charLabel(c) + '</button>';
+  // character dropdown
+  var sel = document.getElementById('charSelect');
+  sel.innerHTML = ['calix', 'deneor'].map(function (c) {
+    return '<option value="' + c + '"' + (ui.activeChar === c ? ' selected' : '') + '>' + charLabel(c) + '</option>';
   }).join('');
-  cs.querySelectorAll('button').forEach(function (b) {
-    b.addEventListener('click', function () { ui.activeChar = b.dataset.char; ui.activeLevel = null; render(); });
-  });
+  sel.onchange = function () { ui.activeChar = sel.value; ui.activeLevel = null; render(); };
+
+  // mode buttons (Personnage / Grimoire)
+  var btnPerso = document.getElementById('btnModePersonnage');
+  var btnGrim = document.getElementById('btnModeGrimoire');
+  btnPerso.className = 'btn' + (ui.mode === 'personnage' ? ' primary' : '');
+  btnGrim.className = 'btn' + (ui.mode === 'grimoire' ? ' primary' : '');
+  btnPerso.onclick = function () { ui.mode = 'personnage'; render(); };
+  btnGrim.onclick = function () { ui.mode = 'grimoire'; render(); };
+
+  document.getElementById('phone').style.display = ui.mode === 'grimoire' ? 'flex' : 'none';
+  document.getElementById('personPanel').style.display = ui.mode === 'personnage' ? 'flex' : 'none';
+  renderSidePanel();
+
+  if (ui.mode === 'personnage') { renderPersonnage(); return; }
 
   var sections = activeSections();
   var order = levelOrder(sections);
@@ -669,6 +892,368 @@ function render() {
 
   var alwaysField = document.getElementById('alwaysAvailableField');
   alwaysField.style.display = (ui.activeChar === 'deneor' && ui.activeLevel !== 'classe') ? 'block' : 'none';
+}
+
+// ---- personnage (mode Personnage) ----
+function pToggleTrackStyle(on) { return 'background:' + (on ? '#ef4444' : 'var(--border-strong)') + ';'; }
+function pToggleKnobStyle(on) { return 'left:' + (on ? '19px' : '3px') + ';'; }
+function pField(label, action, key, value, signed) {
+  return '<div class="pfield"><label>' + label + '</label>' +
+    '<input type="text" inputmode="' + (signed ? 'text' : 'numeric') + '" pattern="' + (signed ? '-?[0-9]*' : '[0-9]*') + '" class="' + (signed ? 'psigned' : 'pnum') + '" data-action="' + action + '" data-key="' + key + '" value="' + (signed ? formatSigned(value) : value) + '"/></div>';
+}
+
+function renderPersonnage() {
+  var p = personProfile();
+
+  var hpHtml = '<div class="psec"><div class="psec-label">Points de vie</div><div class="pgrid3">' +
+    pField('PV actuels', 'p-hp', 'current', p.hp.current, false) +
+    pField('PV max', 'p-hp', 'max', p.hp.max, false) +
+    pField('PV temporaires', 'p-hp', 'temp', p.hp.temp, false) +
+    '</div></div>';
+
+  var combatHtml = '<div class="psec"><div class="psec-label">Combat</div><div class="pgrid3">' +
+    pField('CA', 'p-combat', 'ac', p.combatStats.ac, false) +
+    pField('Initiative', 'p-combat', 'initiative', p.combatStats.initiative, true) +
+    pField('Déplacement (m)', 'p-combat', 'speed', p.combatStats.speed, false) +
+    '</div></div>';
+
+  var togglesHtml = '<div class="psec"><div class="psec-label">États initiaux</div><div class="pcard">' +
+    '<div class="prow"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">Concentration</div>' +
+      '<div class="toggle-track" style="' + pToggleTrackStyle(p.concentration) + '" data-action="p-concentration"><div class="toggle-knob" style="' + pToggleKnobStyle(p.concentration) + '"></div></div></div>' +
+    '<div class="prow" style="border-bottom:none;"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">Inspiration</div>' +
+      '<div class="toggle-track" style="' + pToggleTrackStyle(p.inspiration) + '" data-action="p-inspiration"><div class="toggle-knob" style="' + pToggleKnobStyle(p.inspiration) + '"></div></div></div>' +
+    '</div></div>';
+
+  var attackRows = p.attacks.map(function (atk, idx) {
+    return '<div class="prow" style="flex-direction:column;align-items:stretch;gap:8px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<div class="preorder">' +
+          '<div data-action="p-attack-up" data-id="' + atk.id + '" style="border-radius:5px 5px 0 0;' + (idx === 0 ? 'opacity:0.3;pointer-events:none;' : '') + '">&#9650;</div>' +
+          '<div data-action="p-attack-down" data-id="' + atk.id + '" style="border-radius:0 0 5px 5px;border-top:none;' + (idx === p.attacks.length - 1 ? 'opacity:0.3;pointer-events:none;' : '') + '">&#9660;</div>' +
+        '</div>' +
+        '<input type="text" data-action="p-attack-name" data-id="' + atk.id + '" value="' + escapeHtml(atk.name) + '" placeholder="Nom de l\'arme" style="flex:1;min-width:0;height:36px;padding:0 10px;"/>' +
+        '<div class="premove" data-action="p-attack-remove" data-id="' + atk.id + '">&times;</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<div class="toggle-track" style="' + pToggleTrackStyle(!atk.melee) + '" data-action="p-attack-melee" data-id="' + atk.id + '"><div class="toggle-knob" style="' + pToggleKnobStyle(!atk.melee) + '"></div></div>' +
+        '<label style="font-size:11px;color:var(--text-muted);">Distance</label><div style="flex:1;"></div>' +
+        '<label style="font-size:11px;color:var(--text-muted);">Portée (m)</label>' +
+        '<input type="text" inputmode="numeric" pattern="[0-9]*" class="pnum" style="width:56px;height:34px;" value="' + atk.rangeMeters + '" data-action="p-attack-range" data-id="' + atk.id + '" ' + (!atk.melee ? '' : 'disabled') + '/>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">' +
+        '<div class="pfield"><label>Att.</label><input type="text" inputmode="text" pattern="-?[0-9]*" class="psigned" style="height:34px;" value="' + formatSigned(atk.attackBonus) + '" data-action="p-attack-bonus" data-id="' + atk.id + '"/></div>' +
+        '<div class="pfield"><label>Dégâts</label><input type="text" style="height:34px;text-align:center;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);" placeholder="1d8" value="' + escapeHtml(atk.damageDice) + '" data-action="p-attack-damage-dice" data-id="' + atk.id + '"/></div>' +
+        '<div class="pfield"><label>Bonus dég.</label><input type="text" inputmode="text" pattern="-?[0-9]*" class="psigned" style="height:34px;" value="' + formatSigned(atk.damageBonus) + '" data-action="p-attack-damage-bonus" data-id="' + atk.id + '"/></div>' +
+      '</div>' +
+      '<div class="pfield"><label>Type de dégâts</label><input type="text" style="height:34px;padding:0 10px;text-align:left;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);" placeholder="Perforant" value="' + escapeHtml(atk.damageType) + '" data-action="p-attack-damage-type" data-id="' + atk.id + '"/></div>' +
+    '</div>';
+  }).join('');
+  var attacksHtml = '<div class="psec"><div class="psec-label">Attaque(s)</div>' +
+    (p.attacks.length ? '<div class="pcard">' + attackRows + '</div>' : '') +
+    '<div class="padd" data-action="p-attack-add">+ Ajouter une arme</div></div>';
+
+  var levelRows = p.spellLevels.map(function (l, idx) {
+    var lowerEnabled = p.spellLevels.slice(0, idx).every(function (x) { return x.enabled; });
+    var levelLocked = !l.enabled && !lowerEnabled;
+    return '<div class="prow" style="' + (levelLocked ? 'opacity:0.45;' : '') + '">' +
+      '<div style="width:56px;font-size:13px;font-weight:600;color:var(--text-main);">Niv. ' + l.level + '</div>' +
+      '<div class="toggle-track" style="' + pToggleTrackStyle(l.enabled) + '" data-action="p-level-toggle" data-level="' + l.level + '"><div class="toggle-knob" style="' + pToggleKnobStyle(l.enabled) + '"></div></div>' +
+      '<div style="flex:1;"></div>' +
+      '<label style="font-size:11px;color:var(--text-muted);">Max</label>' +
+      '<input type="text" inputmode="numeric" pattern="[0-9]*" class="pnum" style="width:42px;height:34px;" value="' + l.max + '" data-action="p-level-max" data-level="' + l.level + '" ' + (l.enabled ? '' : 'disabled') + '/>' +
+    '</div>';
+  }).join('');
+  var spellLevelsHtml = '<div class="psec"><div class="psec-label">Emplacements de sorts</div><div class="pcard">' + levelRows + '</div>' +
+    (ui.levelError ? '<div style="font-size:11px;color:#ef4444;">' + escapeHtml(ui.levelError) + '</div>' : '') + '</div>';
+
+  var crRows = p.classResources.map(function (cr, idx) {
+    return '<div class="prow">' +
+      '<div class="preorder">' +
+        '<div data-action="p-cr-up" data-id="' + cr.id + '" style="border-radius:5px 5px 0 0;' + (idx === 0 ? 'opacity:0.3;pointer-events:none;' : '') + '">&#9650;</div>' +
+        '<div data-action="p-cr-down" data-id="' + cr.id + '" style="border-radius:0 0 5px 5px;border-top:none;' + (idx === p.classResources.length - 1 ? 'opacity:0.3;pointer-events:none;' : '') + '">&#9660;</div>' +
+      '</div>' +
+      '<input type="text" data-action="p-cr-label" data-id="' + cr.id + '" value="' + escapeHtml(cr.label) + '" placeholder="Libellé" style="flex:1;min-width:0;height:36px;padding:0 10px;"/>' +
+      '<select data-action="p-cr-type" data-id="' + cr.id + '" style="height:36px;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:12px;">' +
+        '<option value="badges" ' + (cr.type === 'badges' ? 'selected' : '') + '>Badges</option>' +
+        '<option value="counter" ' + (cr.type === 'counter' ? 'selected' : '') + '>Compteur</option>' +
+      '</select>' +
+      '<label style="font-size:11px;color:var(--text-muted);">Max</label>' +
+      '<input type="text" inputmode="numeric" pattern="[0-9]*" class="pnum" style="width:42px;height:36px;" value="' + cr.max + '" data-action="p-cr-max" data-id="' + cr.id + '"/>' +
+      '<div class="premove" data-action="p-cr-remove" data-id="' + cr.id + '">&times;</div>' +
+    '</div>';
+  }).join('');
+  var classResourcesHtml = '<div class="psec"><div class="psec-label">Ressource(s) de classe</div>' +
+    (p.classResources.length ? '<div class="pcard">' + crRows + '</div>' : '') +
+    '<div style="display:flex;gap:8px;">' +
+      '<div class="padd" style="flex:1;" data-action="p-cr-add-badges">+ Ajouter une ressource</div>' +
+      '<div class="padd" style="flex:1;" data-action="p-cr-add-counter">+ Ajouter un compteur</div>' +
+    '</div></div>';
+
+  var abilitiesHtml = '<div class="psec"><div class="psec-label">Caractéristiques</div><div class="pgrid3">' +
+    ABILITY_KEYS.map(function (key) { return pField(ABILITY_LABELS[key], 'p-ability', key, p.abilityScores[key], true); }).join('') +
+    '</div></div>';
+
+  var savingThrowsHtml = '<div class="psec"><div class="psec-label">Jets de sauvegarde</div><div class="pgrid3">' +
+    ABILITY_KEYS.map(function (key) { return pField('Sauv. ' + ABILITY_LABELS[key], 'p-saving', key, p.savingThrows[key], true); }).join('') +
+    '</div></div>';
+
+  var skillsHtml = '<div class="psec"><div class="psec-label">Compétences</div><div class="pcard">' +
+    p.skills.map(function (s, idx) {
+      return '<div class="prow">' +
+        '<div style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">' + escapeHtml(s.name) + '</div>' +
+        '<div class="premove" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:#ef4444;" data-action="p-skill-dec" data-index="' + idx + '">&minus;</div>' +
+        '<input type="text" inputmode="text" pattern="-?[0-9]*" class="psigned" style="width:44px;height:36px;" value="' + formatSigned(s.modifier) + '" data-action="p-skill-input" data-index="' + idx + '"/>' +
+        '<div class="premove" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.4);color:#22c55e;" data-action="p-skill-inc" data-index="' + idx + '">+</div>' +
+      '</div>';
+    }).join('') + '</div></div>';
+
+  var preparedHtml = ui.activeChar === 'deneor'
+    ? '<div class="psec"><div class="psec-label">Sorts préparés (un par ligne)</div>' +
+        '<textarea data-action="p-prepared-spells" rows="6" style="width:100%;background:var(--bg-deep);border:1px solid rgba(var(--border-tint),0.24);border-radius:8px;color:var(--text-main);font-size:12.5px;padding:10px;font-family:inherit;resize:vertical;">' + escapeHtml(p.preparedSpells.join('\n')) + '</textarea>' +
+      '</div>'
+    : '';
+
+  var goldHtml = '<div class="psec"><div class="psec-label">Or</div><div class="pgrid3">' +
+    pField('Or (PO)', 'p-gold', 'gold', p.gold, false) +
+    '</div></div>';
+
+  document.getElementById('personPanel').innerHTML =
+    '<div class="person-title font-cinzel">Personnage — ' + escapeHtml(CHARACTER_NAMES[ui.activeChar]) + '</div>' +
+    hpHtml + combatHtml + togglesHtml + attacksHtml + spellLevelsHtml + classResourcesHtml +
+    abilitiesHtml + savingThrowsHtml + skillsHtml + preparedHtml + goldHtml;
+
+  bindPersonnageEvents();
+}
+
+function bindPersonnageEvents() {
+  var panel = document.getElementById('personPanel');
+  var p = personProfile();
+
+  panel.querySelectorAll('[data-action="p-hp"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var key = el.getAttribute('data-key');
+      if (key === 'max') { p.hp.max = clamp(toInt(el.value, p.hp.max), 0, 999); p.hp.current = clamp(p.hp.current, 0, p.hp.max); }
+      else if (key === 'current') p.hp.current = clamp(toInt(el.value, p.hp.current), 0, p.hp.max);
+      else p.hp.temp = clamp(toInt(el.value, p.hp.temp), 0, 999);
+      saveState(); render();
+    });
+  });
+
+  panel.querySelectorAll('[data-action="p-combat"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var key = el.getAttribute('data-key');
+      var min = key === 'initiative' ? -99 : 0;
+      p.combatStats[key] = clamp(toInt(el.value, p.combatStats[key]), min, 99);
+      saveState(); render();
+    });
+  });
+
+  var concEl = panel.querySelector('[data-action="p-concentration"]');
+  if (concEl) concEl.addEventListener('click', function () { p.concentration = !p.concentration; saveState(); render(); });
+  var inspEl = panel.querySelector('[data-action="p-inspiration"]');
+  if (inspEl) inspEl.addEventListener('click', function () { p.inspiration = !p.inspiration; saveState(); render(); });
+
+  panel.querySelectorAll('[data-action="p-attack-name"]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (atk) { atk.name = el.value; saveState(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-damage-dice"]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (atk) { atk.damageDice = el.value; saveState(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-damage-type"]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (atk) { atk.damageType = el.value; saveState(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-range"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (!atk) return;
+      atk.rangeMeters = clamp(toInt(el.value, atk.rangeMeters), 0, 999);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-bonus"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (!atk) return;
+      atk.attackBonus = clamp(toInt(el.value, atk.attackBonus), -99, 99);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-damage-bonus"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (!atk) return;
+      atk.damageBonus = clamp(toInt(el.value, atk.damageBonus), -99, 99);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-melee"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var atk = p.attacks.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (atk) { atk.melee = !atk.melee; saveState(); render(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-remove"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.attacks.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx !== -1) { p.attacks.splice(idx, 1); saveState(); render(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-up"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.attacks.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx > 0) { var item = p.attacks.splice(idx, 1)[0]; p.attacks.splice(idx - 1, 0, item); saveState(); render(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-attack-down"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.attacks.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx !== -1 && idx < p.attacks.length - 1) { var item = p.attacks.splice(idx, 1)[0]; p.attacks.splice(idx + 1, 0, item); saveState(); render(); }
+    });
+  });
+  var attackAdd = panel.querySelector('[data-action="p-attack-add"]');
+  if (attackAdd) attackAdd.addEventListener('click', function () {
+    p.attacks.push({ id: generateAdminId(), name: 'Arme', melee: true, rangeMeters: 0, attackBonus: 0, damageDice: '', damageBonus: 0, damageType: '' });
+    saveState(); render();
+  });
+
+  panel.querySelectorAll('[data-action="p-level-toggle"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var lvl = parseInt(el.getAttribute('data-level'), 10);
+      var sl = p.spellLevels.find(function (x) { return x.level === lvl; });
+      if (!sl.enabled) {
+        var lowerEnabled = p.spellLevels.filter(function (x) { return x.level < lvl; }).every(function (x) { return x.enabled; });
+        if (!lowerEnabled) { ui.levelError = 'Activez d\'abord les niveaux inférieurs.'; render(); return; }
+        sl.enabled = true;
+        ui.levelError = '';
+      } else {
+        var higherEnabled = p.spellLevels.some(function (x) { return x.level > lvl && x.enabled; });
+        if (higherEnabled && !confirm('Désactiver le niveau ' + lvl + ' désactivera aussi les niveaux supérieurs actifs. Continuer ?')) return;
+        p.spellLevels.forEach(function (x) { if (x.level >= lvl) x.enabled = false; });
+      }
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-level-max"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var lvl = parseInt(el.getAttribute('data-level'), 10);
+      var sl = p.spellLevels.find(function (x) { return x.level === lvl; });
+      sl.max = clamp(toInt(el.value, sl.max), 0, 12);
+      saveState(); render();
+    });
+  });
+
+  panel.querySelectorAll('[data-action="p-cr-label"]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      var cr = p.classResources.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (cr) { cr.label = el.value; saveState(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-cr-max"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var cr = p.classResources.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (!cr) return;
+      cr.max = clamp(toInt(el.value, cr.max), 0, cr.type === 'counter' ? 99 : 20);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-cr-type"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var cr = p.classResources.find(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (!cr) return;
+      cr.type = el.value === 'counter' ? 'counter' : 'badges';
+      cr.max = clamp(cr.max, 0, cr.type === 'counter' ? 99 : 20);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-cr-remove"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.classResources.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx !== -1) { p.classResources.splice(idx, 1); saveState(); render(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-cr-up"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.classResources.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx > 0) { var item = p.classResources.splice(idx, 1)[0]; p.classResources.splice(idx - 1, 0, item); saveState(); render(); }
+    });
+  });
+  panel.querySelectorAll('[data-action="p-cr-down"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = p.classResources.findIndex(function (x) { return x.id === el.getAttribute('data-id'); });
+      if (idx !== -1 && idx < p.classResources.length - 1) { var item = p.classResources.splice(idx, 1)[0]; p.classResources.splice(idx + 1, 0, item); saveState(); render(); }
+    });
+  });
+  var crAddBadges = panel.querySelector('[data-action="p-cr-add-badges"]');
+  if (crAddBadges) crAddBadges.addEventListener('click', function () {
+    p.classResources.push({ id: generateAdminId(), label: 'Ressource de Classe', max: 0, type: 'badges' });
+    saveState(); render();
+  });
+  var crAddCounter = panel.querySelector('[data-action="p-cr-add-counter"]');
+  if (crAddCounter) crAddCounter.addEventListener('click', function () {
+    p.classResources.push({ id: generateAdminId(), label: 'Compteur', max: 0, type: 'counter' });
+    saveState(); render();
+  });
+
+  panel.querySelectorAll('[data-action="p-ability"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var key = el.getAttribute('data-key');
+      p.abilityScores[key] = clamp(toInt(el.value, p.abilityScores[key]), -99, 99);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-saving"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var key = el.getAttribute('data-key');
+      p.savingThrows[key] = clamp(toInt(el.value, p.savingThrows[key]), -99, 99);
+      saveState(); render();
+    });
+  });
+
+  panel.querySelectorAll('[data-action="p-skill-input"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var idx = parseInt(el.getAttribute('data-index'), 10);
+      p.skills[idx].modifier = clamp(toInt(el.value, p.skills[idx].modifier), -99, 99);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-skill-inc"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = parseInt(el.getAttribute('data-index'), 10);
+      p.skills[idx].modifier = clamp(p.skills[idx].modifier + 1, -99, 99);
+      saveState(); render();
+    });
+  });
+  panel.querySelectorAll('[data-action="p-skill-dec"]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var idx = parseInt(el.getAttribute('data-index'), 10);
+      p.skills[idx].modifier = clamp(p.skills[idx].modifier - 1, -99, 99);
+      saveState(); render();
+    });
+  });
+
+  var preparedEl = panel.querySelector('[data-action="p-prepared-spells"]');
+  if (preparedEl) {
+    preparedEl.addEventListener('change', function () {
+      p.preparedSpells = preparedEl.value.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+      saveState(); render();
+    });
+  }
+
+  panel.querySelectorAll('[data-action="p-gold"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      p.gold = clamp(Math.round(toInt(el.value, p.gold)), 0, 10000);
+      saveState(); render();
+    });
+  });
 }
 
 // ---- spell modal ----
@@ -770,7 +1355,6 @@ function openLevelModal() {
   renderLevelList();
   document.getElementById('levelModalBackdrop').classList.add('open');
 }
-document.getElementById('btnAddLevel').addEventListener('click', openLevelModal);
 document.getElementById('btnCloseLevelModal').addEventListener('click', function () { document.getElementById('levelModalBackdrop').classList.remove('open'); });
 document.getElementById('levelModalBackdrop').addEventListener('click', function (e) { if (e.target.id === 'levelModalBackdrop') document.getElementById('levelModalBackdrop').classList.remove('open'); });
 
@@ -809,14 +1393,57 @@ function deleteCurrentSection() {
 }
 
 // ---- reset ----
-document.getElementById('btnReset').addEventListener('click', function () {
-  if (!confirm('Reinitialiser tes modifications et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface tes ajouts non exportes.')) return;
-  state = cloneSeed();
+function resetGrimoire() {
+  if (!confirm('Reinitialiser tes modifications de Grimoire et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface tes ajouts non exportes.')) return;
+  var fresh = cloneSeed();
+  state.calix = fresh.calix;
+  state.deneor = fresh.deneor;
   saveState();
   ui.activeLevel = null;
   render();
-  showToast('Donnees reinitialisees');
-});
+  showToast('Grimoire reinitialise');
+}
+function resetPersonnage() {
+  if (!confirm('Reinitialiser tes modifications de Personnage (les deux) et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface tes ajouts non exportes.')) return;
+  state.profiles = cloneSeedProfiles();
+  saveState();
+  ui.levelError = '';
+  render();
+  showToast('Personnages reinitialises');
+}
+
+// ---- side panel (contenu adapte au mode actif) ----
+function renderSidePanel() {
+  var title = document.getElementById('sidePanelTitle');
+  var body = document.getElementById('sidePanelBody');
+  var actions = document.getElementById('sidePanelActions');
+  if (ui.mode === 'grimoire') {
+    title.textContent = 'Comment ça marche (Grimoire)';
+    body.innerHTML =
+      '<p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Clique sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>' +
+      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>' +
+      '<p>Configure un token GitHub une fois ("Token GitHub"), puis clique "Publier sur GitHub" pour ' +
+      'committer directement le Grimoire (SPELLBOOK/DENEOR_SPELLBOOK) et les Personnages dans index.html ' +
+      'sur la branche master (mise a jour immediate de la prod GitHub Pages).</p>';
+    actions.innerHTML =
+      '<button class="btn" id="btnAddLevel">Gerer les niveaux</button>' +
+      '<button class="btn" id="btnResetMode">Reinitialiser le Grimoire</button>';
+    document.getElementById('btnAddLevel').addEventListener('click', openLevelModal);
+    document.getElementById('btnResetMode').addEventListener('click', resetGrimoire);
+  } else {
+    title.textContent = 'Comment ça marche (Personnage)';
+    body.innerHTML =
+      '<p>Ce formulaire regroupe tout ce qui est editable dans "Parametrer le Personnage" en jeu : PV, ' +
+      'Combat, Attaques, Emplacements de sorts, Ressources de classe, Caracteristiques, Jets de ' +
+      'sauvegarde, Competences' + (ui.activeChar === 'deneor' ? ', Sorts prepares' : '') + ' et Or.</p>' +
+      '<p>Ça edite le profil <b>par defaut</b> code en dur (calixDefaultProfile()/deneorDefaultProfile() ' +
+      'dans index.html) — pas la sauvegarde localStorage d\'un joueur en cours de partie. Les changements ' +
+      'affectent les nouvelles installations et les reinitialisations, pas les parties deja en cours.</p>' +
+      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
+    actions.innerHTML = '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>';
+    document.getElementById('btnResetMode').addEventListener('click', resetPersonnage);
+  }
+}
 
 // ---- export ----
 function jsStr(s) {
@@ -846,35 +1473,43 @@ function exportCharCode(c) {
   return '  var ' + varName + ' = {\n    sections: [\n' + sectionsLit + '\n    ]\n  };';
 }
 
-var exportModalChar = 'calix';
-function renderExportArea() {
-  document.getElementById('exportArea').value = exportCharCode(exportModalChar);
-  document.getElementById('expTabCalix').className = 'btn' + (exportModalChar === 'calix' ? ' primary' : '');
-  document.getElementById('expTabDeneor').className = 'btn' + (exportModalChar === 'deneor' ? ' primary' : '');
-}
-document.getElementById('expTabCalix').addEventListener('click', function () { exportModalChar = 'calix'; renderExportArea(); });
-document.getElementById('expTabDeneor').addEventListener('click', function () { exportModalChar = 'deneor'; renderExportArea(); });
-document.getElementById('btnCloseExport').addEventListener('click', function () { document.getElementById('exportModalBackdrop').classList.remove('open'); });
-document.getElementById('exportModalBackdrop').addEventListener('click', function (e) { if (e.target.id === 'exportModalBackdrop') document.getElementById('exportModalBackdrop').classList.remove('open'); });
-document.getElementById('btnCopyExport').addEventListener('click', function () {
-  var area = document.getElementById('exportArea');
-  area.select();
-  try {
-    navigator.clipboard.writeText(area.value).then(function () { showToast('Code copie'); }).catch(function () { document.execCommand('copy'); showToast('Code copie'); });
-  } catch (e) {
-    document.execCommand('copy');
-    showToast('Code copie');
+// Génère le texte de l'objet littéral tel qu'il doit apparaître dans
+// calixDefaultProfile()/deneorDefaultProfile() (dans sanitizeProfile({ ... })) : tous les champs
+// explicites, used[]/current dérivés de max/type (profil par défaut toujours "frais").
+function jsNumArr(arr) { return '[' + arr.map(function (v) { return String(v); }).join(', ') + ']'; }
+function jsStrArr(arr) { return '[' + arr.map(function (v) { return jsStr(v); }).join(', ') + ']'; }
+function exportProfileCode(charId) {
+  var full = deriveFullProfile(charId);
+  var indent = '      ';
+  var lines = [];
+  lines.push('characterName: ' + jsStr(full.characterName));
+  lines.push('hp: { current: ' + full.hp.current + ', max: ' + full.hp.max + ', temp: ' + full.hp.temp + ' }');
+  lines.push('combatStats: { ac: ' + full.combatStats.ac + ', initiative: ' + full.combatStats.initiative + ', speed: ' + full.combatStats.speed + ' }');
+  lines.push('spellLevels: [\n' + full.spellLevels.map(function (l) {
+    return indent + '  { level: ' + l.level + ', enabled: ' + l.enabled + ', max: ' + l.max + ', used: ' + jsNumArr(l.used.map(function () { return false; })) + ' }';
+  }).join(',\n') + '\n' + indent + ']');
+  lines.push('classResources: [\n' + full.classResources.map(function (cr) {
+    var fields = ['id: ' + jsStr(cr.id), 'label: ' + jsStr(cr.label), 'max: ' + cr.max];
+    if (cr.type === 'counter') fields.push('type: ' + jsStr('counter'), 'current: ' + cr.current, 'used: []');
+    else fields.push('used: ' + jsNumArr(cr.used.map(function () { return false; })));
+    return indent + '  { ' + fields.join(', ') + ' }';
+  }).join(',\n') + '\n' + indent + ']');
+  if (full.attacks.length) {
+    lines.push('attacks: [\n' + full.attacks.map(function (a) {
+      return indent + '  { id: ' + jsStr(a.id) + ', name: ' + jsStr(a.name) + ', melee: ' + a.melee + ', rangeMeters: ' + a.rangeMeters + ', attackBonus: ' + a.attackBonus + ', damageDice: ' + jsStr(a.damageDice) + ', damageBonus: ' + a.damageBonus + ', damageType: ' + jsStr(a.damageType) + ' }';
+    }).join(',\n') + '\n' + indent + ']');
   }
-});
-document.getElementById('btnDownloadExport').addEventListener('click', function () {
-  var blob = new Blob([document.getElementById('exportArea').value], { type: 'text/javascript' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = (exportModalChar === 'deneor' ? 'deneor_spellbook' : 'spellbook') + '.js';
-  a.click();
-  URL.revokeObjectURL(url);
-});
+  lines.push('concentration: ' + full.concentration);
+  lines.push('inspiration: ' + full.inspiration);
+  lines.push('abilityScores: { ' + ABILITY_KEYS.map(function (k) { return k + ': ' + full.abilityScores[k]; }).join(', ') + ' }');
+  lines.push('savingThrows: { ' + ABILITY_KEYS.map(function (k) { return k + ': ' + full.savingThrows[k]; }).join(', ') + ' }');
+  lines.push('skills: [\n' + full.skills.map(function (s) {
+    return indent + '  { name: ' + jsStr(s.name) + ', modifier: ' + s.modifier + ' }';
+  }).join(',\n') + '\n' + indent + ']');
+  if (full.preparedSpells.length) lines.push('preparedSpells: ' + jsStrArr(full.preparedSpells));
+  if (full.gold) lines.push('gold: ' + full.gold);
+  return '{\n' + lines.map(function (l) { return indent + l; }).join(',\n') + '\n    }';
+}
 
 // ---- toast ----
 function showToast(msg, isErr) {
@@ -889,60 +1524,38 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     document.getElementById('spellModalBackdrop').classList.remove('open');
     document.getElementById('levelModalBackdrop').classList.remove('open');
-    document.getElementById('exportModalBackdrop').classList.remove('open');
   }
 });
 
-// ---- export / import du fichier de travail (JSON) ----
-function exportJSONFile() {
-  var data = { calix: state.calix, deneor: state.deneor };
-  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  var d = new Date();
-  var stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  a.href = url;
-  a.download = 'cantrip-sorts-' + stamp + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Fichier exporte');
-}
-
-function importJSONFile(file) {
-  var reader = new FileReader();
-  reader.onload = function (evt) {
-    try {
-      var data = JSON.parse(evt.target.result);
-      if (!data || !Array.isArray(data.calix) || !Array.isArray(data.deneor)) {
-        showToast('Fichier invalide (structure calix/deneor attendue)', true);
-        return;
-      }
-      state = { calix: data.calix, deneor: data.deneor };
-      saveState();
-      ui.activeLevel = null;
-      render();
-      showToast('Fichier importe');
-    } catch (e) {
-      showToast('Fichier JSON illisible', true);
-    }
+// ---- derive un profil complet (avec used[]/current), meme forme que character.savedProfile
+// exporte par l'app elle-meme (exportCharacterJson() dans index.html) ----
+function deriveFullProfile(charId) {
+  var p = state.profiles[charId];
+  return {
+    characterName: CHARACTER_NAMES[charId],
+    hp: { current: p.hp.current, max: p.hp.max, temp: p.hp.temp },
+    combatStats: { ac: p.combatStats.ac, initiative: p.combatStats.initiative, speed: p.combatStats.speed },
+    spellLevels: p.spellLevels.map(function (l) {
+      var used = [];
+      for (var i = 0; i < l.max; i++) used.push(false);
+      return { level: l.level, enabled: l.enabled, max: l.max, used: used };
+    }),
+    classResources: p.classResources.map(function (cr) {
+      var out = { id: cr.id, label: cr.label, max: cr.max, type: cr.type, used: [] };
+      if (cr.type === 'counter') out.current = cr.max;
+      else { var u = []; for (var j = 0; j < cr.max; j++) u.push(false); out.used = u; }
+      return out;
+    }),
+    attacks: JSON.parse(JSON.stringify(p.attacks)),
+    concentration: p.concentration,
+    inspiration: p.inspiration,
+    abilityScores: JSON.parse(JSON.stringify(p.abilityScores)),
+    savingThrows: JSON.parse(JSON.stringify(p.savingThrows)),
+    skills: JSON.parse(JSON.stringify(p.skills)),
+    preparedSpells: p.preparedSpells.slice(),
+    gold: p.gold
   };
-  reader.readAsText(file);
 }
-
-document.getElementById('btnExportFile').addEventListener('click', exportJSONFile);
-document.getElementById('btnImportFile').addEventListener('click', function () {
-  document.getElementById('importFileInput').click();
-});
-document.getElementById('importFileInput').addEventListener('change', function (e) {
-  var file = e.target.files[0];
-  if (file) importJSONFile(file);
-  e.target.value = '';
-});
-document.getElementById('btnGenCode').addEventListener('click', function () {
-  exportModalChar = ui.activeChar;
-  renderExportArea();
-  document.getElementById('exportModalBackdrop').classList.add('open');
-});
 
 // ---- publication directe sur GitHub (token cote client, jamais transmis ailleurs qu'a l'API GitHub) ----
 var GH_OWNER = 'Nerdash';
@@ -1024,6 +1637,39 @@ function replaceVarBlock(source, varName, newBlock) {
   return source.slice(0, startIdx) + newBlock + source.slice(endIdx);
 }
 
+// Remplace uniquement l'objet littéral passé à sanitizeProfile({ ... }) dans
+// "function <funcName>() { return sanitizeProfile({...}); }", en laissant le reste de la fonction
+// intact. Même algorithme de comptage d'accolades hors chaînes que replaceVarBlock.
+function replaceProfileBlock(source, funcName, newObjectLiteral) {
+  var fnMarker = 'function ' + funcName + '() {';
+  var fnIdx = source.indexOf(fnMarker);
+  if (fnIdx === -1) throw new Error('Fonction "' + funcName + '" introuvable dans index.html');
+  var spMarker = 'sanitizeProfile(';
+  var spIdx = source.indexOf(spMarker, fnIdx);
+  if (spIdx === -1) throw new Error('"sanitizeProfile(" introuvable dans "' + funcName + '"');
+  var braceStart = source.indexOf('{', spIdx + spMarker.length);
+  if (braceStart === -1) throw new Error('Objet littéral introuvable dans "' + funcName + '"');
+  var i = braceStart;
+  var depth = 0;
+  var inStr = null;
+  for (; i < source.length; i++) {
+    var ch = source[i];
+    if (inStr) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === inStr) inStr = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { inStr = ch; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) { i++; break; }
+    }
+  }
+  if (depth !== 0) throw new Error('Objet littéral de "' + funcName + '" mal formé (accolades non équilibrées)');
+  return source.slice(0, braceStart) + newObjectLiteral + source.slice(i);
+}
+
 function bumpServiceWorkerCache(swSource) {
   var m = swSource.match(/const CACHE_NAME = 'cantrip-v(\d+)';/);
   if (!m) throw new Error('CACHE_NAME introuvable dans sw.js');
@@ -1073,12 +1719,14 @@ function publishToGithub() {
     .then(function (file) {
       var updated = replaceVarBlock(file.content, 'SPELLBOOK', exportCharCode('calix'));
       updated = replaceVarBlock(updated, 'DENEOR_SPELLBOOK', exportCharCode('deneor'));
-      return ghPutFile('index.html', updated, file.sha, 'Mise a jour du Grimoire (sorts) via l\'outil admin');
+      updated = replaceProfileBlock(updated, 'calixDefaultProfile', exportProfileCode('calix'));
+      updated = replaceProfileBlock(updated, 'deneorDefaultProfile', exportProfileCode('deneor'));
+      return ghPutFile('index.html', updated, file.sha, 'Mise a jour du Grimoire et des personnages via l\'outil admin');
     })
     .then(function () {
       return ghGetFile('sw.js').then(function (file) {
         var updated = bumpServiceWorkerCache(file.content);
-        return ghPutFile('sw.js', updated, file.sha, 'Invalide le cache du service worker suite a la mise a jour du Grimoire');
+        return ghPutFile('sw.js', updated, file.sha, 'Invalide le cache du service worker suite a la mise a jour du Grimoire et des personnages via l\'outil admin');
       });
     })
     .then(function () {
@@ -1100,7 +1748,7 @@ document.getElementById('btnPublishGithub').addEventListener('click', function (
     document.getElementById('tokenModalBackdrop').classList.add('open');
     return;
   }
-  if (!confirm('Ceci va committer directement sur la branche "' + GH_BRANCH + '" et mettre a jour l\'application en production (GitHub Pages). Continuer ?')) return;
+  if (!confirm('Ceci va committer directement le Grimoire et les Personnages sur la branche "' + GH_BRANCH + '" et mettre a jour l\'application en production (GitHub Pages). Continuer ?')) return;
   publishToGithub();
 });
 
