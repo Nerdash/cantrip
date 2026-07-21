@@ -40,12 +40,15 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
 ### Pages (barre de navigation basse, 4 onglets)
 
 1. **Tracker** (page par défaut) — portrait du personnage actif (`state.characters[activeCharacterId]
-   .portrait`, cercle 38px) à gauche du nom, ligne de 3 tuiles CA / Initiative /
-   Déplacement (`profile.combatStats: { ac, initiative, speed }`, lecture seule, éditées dans
-   Paramètres), PV (bloc fusionné avec bouclier temporaire), juste en dessous un bloc "Attaque"
-   (armes uniquement, voir ci-dessous), emplacements de sorts groupés par
-   niveau en badges circulaires, ressource(s) de classe (un bloc de badges par ressource
-   configurée, voir Paramètres ci-dessous), bouton "Repos" unique.
+   .portrait`, cercle 38px) à gauche du nom, puis PV (bloc fusionné avec bouclier temporaire,
+   boutons −/+ de part et d'autre). Le reste de la page est **entièrement inclus dans la zone
+   scrollable** `[data-scroll-root]` plutôt que fixé en bas de l'écran (changement de juillet
+   2026) : bloc "Attaque" (armes uniquement, voir ci-dessous), ressource(s) de classe (un bloc de
+   badges par ressource configurée, voir Paramètres ci-dessous), emplacements de sorts groupés par
+   niveau en badges circulaires, bouton "Repos", puis en tout dernier la ligne de 3 tuiles
+   CA / Initiative / Déplacement (`profile.combatStats: { ac, initiative, speed }`, lecture seule,
+   éditées dans Paramètres) — ce regroupement dans le scroll évite qu'ils occupent en permanence
+   de la place à l'écran.
    **Bloc Attaque** (`profile.attacks`, tableau 0..n d'objets `{ id, name, melee, rangeMeters,
    attackBonus, damageDice, damageBonus, damageType }`, lecture seule ici — édité dans
    Paramétrer le Personnage) — masqué entièrement si `attacks` est vide (comme les ressources de
@@ -62,17 +65,35 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `iconStar(filled)`, se remplit — `fill:currentColor` — quand actif, simple surbrillance ambre,
    pas de glow) et concentration (icône smiley aux sourcils froncés `ICON_CONCENTRATION`, glow
    violet animé via la classe `concentration-active` / `@keyframes concentration-pulse`).
+   Concentration active déclenche deux effets supplémentaires sur le bloc PV : un liseret violet
+   avec traînée tourne en continu autour du bloc (`hp-concentration-ring`, angle animé via une
+   custom property `--hp-ring-angle` déclarée en `@property` — ne jamais faire un
+   `transform:rotate()` direct sur la boîte elle-même : le bloc PV est un rectangle large et non
+   carré, une rotation physique fait sortir le liseret du cadre) ; et si le joueur retire des PV
+   (`data-action="damage"`) pendant que la concentration est active, un toast violet ("Vous êtes
+   concentré et venez de subir des dégâts, pensez au jet de sauvegarde !") glisse depuis le haut de
+   l'écran (recouvrement léger du bloc PV accepté), reste 10s puis repart, fermable via une croix,
+   avec un cooldown de 30s entre deux déclenchements (`maybeShowConcentrationToast()` /
+   `ui.concentrationToast`, juillet 2026).
    Pas de swipe entre Suivi et Personnage : un swipe horizontal (`pointerdown`/`pointermove`/
    `pointerup` sur `#app`) a existé un temps mais a été retiré (2026-07-13) après plusieurs
    itérations infructueuses — le geste était systématiquement happé par le scroll natif dès qu'il
    démarrait dans une zone verticalement scrollable (`[data-scroll-root]`), même avec
    `touch-action:pan-y` et un `preventDefault()` sur `pointermove`. Navigation entre ces deux
-   pages uniquement via la barre de navigation basse. Le scroll de `[data-scroll-root]` est le
-   scroll natif classique, sans aucune restriction `touch-action` particulière.
+   pages uniquement via la barre de navigation basse. Les rangées horizontales `.hscroll`
+   (badges d'emplacements de sorts, de ressources de classe) sont en `touch-action:pan-x pan-y`
+   (pas `pan-x` seul) pour ne pas bloquer le scroll vertical dès qu'un doigt démarre dessus ; sur
+   pointeur tactile (`@media (pointer:coarse)`), elles passent même en habillage
+   (`flex-wrap:wrap`) plutôt qu'en scroll horizontal, pour supprimer entièrement ce second axe de
+   scroll imbriqué (bug corrigé juillet 2026 : le scroll vertical du Tracker ne captait pas
+   toujours le doigt de l'utilisateur — l'arbitrage de geste entre deux scrolls imbriqués n'est
+   pas fiable à 100% même avec `touch-action` bien réglé).
 2. **Personnage** (onglet nav, anciennement "Stats" ; le code interne — `renderStats()`,
    `ui.statsSearch`, `view: 'stats'` — garde le nom `stats`) — caractéristiques (6) et
    compétences (18, D&D 5e, noms français) en lecture seule, avec champ de recherche filtrant
-   la liste en direct. Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
+   la liste en direct et la triant par pertinence (`skillMatchRank()` : correspondance exacte,
+   puis début de nom, puis contient — ex. taper "H" affiche Histoire avant Athlétisme, corrigé
+   juillet 2026). Les valeurs sont saisies manuellement dans Paramètres (l'app ne calcule
    aucun modificateur). Accessible uniquement via la barre de navigation basse, comme le Tracker.
    Le focus du champ de recherche masque volontairement le bloc "Caractéristiques"
    (`#statsAbilitiesBlock`, `style.display = 'none'`) pour laisser plus de place à la liste de
@@ -182,7 +203,7 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      (`SETTINGS_SEPARATOR`) entre les blocs.
      **Verrou d'édition** : la page démarre verrouillée (lecture seule, tous les champs `disabled`
      ou `pointer-events:none`, valeurs affichées = `profile()`) avec un bouton "Modifier" en bas
-     (hors zone de scroll, `flex:none`, comme le "Repos" du Tracker). Le tap dessus
+     (hors zone de scroll, `flex:none`). Le tap dessus
      (`data-action="start-edit-character"`) clone le profil actif dans
      `ui.settingsCharacterDraft` (`cloneDeep()`) et passe `ui.settingsCharacterEditing = true` :
      tous les champs se déverrouillent et éditent ce brouillon via
@@ -275,11 +296,15 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
   de feuilletage posé) ; en dessous du seuil, la carte revient se recaler avec la même transition
   de 360ms. Un badge "Personnage chargé" s'affiche sur la carte si `state.activeCharacterId`
   correspond au personnage affiché.
-  Un seul bouton en bas, **Charger ce personnage** (`data-action="load-character"`) — toujours
-  actif : clone `character.savedProfile` dans `state.profiles[state.activeProfileIndex]`, bascule
-  `state.activeCharacterId`, applique le thème du personnage (`applyTheme()`, voir section
-  Thèmes (Calix / Deneor) plus bas), puis renvoie directement sur le Tracker (`ui.view =
-  'tracker'`).
+  Sous la carte, dans cet ordre : le bouton **Charger ce personnage** (`data-action=
+  "load-character"`) — toujours actif : clone `character.savedProfile` dans
+  `state.profiles[state.activeProfileIndex]`, bascule `state.activeCharacterId`, applique le
+  thème du personnage (`applyTheme()`, voir section Thèmes (Calix / Deneor) plus bas), puis
+  renvoie directement sur le Tracker (`ui.view = 'tracker'`) — puis la rangée flèches/pastilles du
+  carrousel. Les flèches gauche/droite (`data-action="character-carousel-step"`) sont
+  volontairement à la même taille que les boutons −/+ du bloc PV du Tracker (80×76px, icône
+  36px, via `iconArrowLeft(size)`) plutôt que la taille généraliste 36×36 des autres boutons de
+  navigation (`navBackButtonHtml()`), pour rester faciles à toucher (juillet 2026).
   Cet écran ne sert plus qu'à ça depuis juillet 2026 : "Mettre à jour le personnage" et le bloc
   d'export/import JSON par personnage (`exportCharacterJson()`/`importCharacterJson()`,
   `ui.characterNotice`/`ui.characterImportError`) ont été retirés — `character.savedProfile` de
@@ -347,7 +372,7 @@ personnage chargé par défaut sur un état vierge.
 `interactive-widget=resizes-content` — mais sur certains navigateurs/OS (Safari iOS en
 particulier), l'ouverture du clavier virtuel ne redimensionne pas la layout viewport, ce qui
 masquerait les éléments `flex:none` en bas de page (boutons Annuler/Valider de Paramétrer le
-Personnage, "Repos"...) sous le clavier. Un listener global sur `window.visualViewport.resize`
+Personnage...) sous le clavier. Un listener global sur `window.visualViewport.resize`
 (attaché une seule fois en fin de script) recale `app.style.height` sur
 `visualViewport.height`, qui reflète toujours la zone réellement visible. Le même listener sert de
 filet de sécurité pour `#statsAbilitiesBlock`/`#statsResetBtn` (page Personnage) : si le clavier se
@@ -384,23 +409,23 @@ https://benwatz.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-
 (stats). Sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`,
 indépendante de `jdr_character_tracker_state`).
 
-Barre du haut en 3 zones (`.topbar`, CSS Grid `1fr auto 1fr` — la zone centrale reste
-mathématiquement centrée quelle que soit la largeur des zones latérales, qui peuvent chacune
-passer sur 2 lignes si la fenêtre est étroite plutôt que de chevaucher le centre) :
-- **Gauche** : titre + deux boutons de personnage (`#btnCharCalix`/`#btnCharDeneor`, `ui.activeChar`)
-  à la place d'un ancien menu déroulant.
-- **Centre, toujours affichée au milieu de la barre** : deux boutons de mode (`ui.mode`,
+Barre du haut en 2 zones (`.topbar`, flex simple `justify-content:space-between` — pas de
+CSS Grid, pas de zone centrée ; une version précédente centrait Personnage/Grimoire dans une
+3e zone médiane, abandonnée en juillet 2026 au profit du regroupement décrit ci-dessous) :
+- **Gauche** (`.topbar-left`) : titre + deux boutons de personnage
+  (`#btnCharCalix`/`#btnCharDeneor`, `ui.activeChar`) à la place d'un ancien menu déroulant.
+- **Droite** (`.topbar-right`), dans l'ordre : deux boutons de mode (`ui.mode`,
   `'personnage'` | `'grimoire'`) — **"Personnage"** puis **"Grimoire"** — qui affichent l'un ou
-  l'autre panneau (`#personPanel` / `#phone`) sans jamais montrer les deux à la fois. Le panneau
-  "Personnage" reproduit tout ce qui est éditable dans "Paramétrer le Personnage" en jeu (PV,
-  Combat, Attaques, Emplacements de sorts, Ressources de classe, Caractéristiques, Jets de
-  sauvegarde, Compétences, Sorts préparés pour Deneor, Or) ; le panneau "Grimoire" reproduit le
-  rendu du Grimoire de l'app (thème, filtres, onglets de niveau) pour éditer les sorts. Édite le
-  profil **par défaut** codé en dur (`calixDefaultProfile()`/`deneorDefaultProfile()` dans
-  `index.html`), pas la sauvegarde localStorage d'un joueur en cours de partie.
-- **Droite** : un bouton roue crantée (`#btnGearMenu`, icône SVG) ouvrant un sous-menu
-  (`#gearDropdown`, fermé au clic extérieur ou sur son unique item) contenant "Token GitHub" ;
-  puis le bouton **"Publier"** (renommé depuis "Publier sur GitHub").
+  l'autre panneau (`#personPanel` / `#phone`) sans jamais montrer les deux à la fois ; puis un
+  bouton roue crantée (`#btnGearMenu`, icône SVG) ouvrant un sous-menu (`#gearDropdown`, fermé au
+  clic extérieur ou sur son unique item) contenant "Token GitHub" ; puis le bouton **"Publier"**
+  (renommé depuis "Publier sur GitHub"). Le panneau "Personnage" reproduit tout ce qui est
+  éditable dans "Paramétrer le Personnage" en jeu (PV, Combat, Attaques, Emplacements de sorts,
+  Ressources de classe, Caractéristiques, Jets de sauvegarde, Compétences, Sorts préparés pour
+  Deneor, Or) ; le panneau "Grimoire" reproduit le rendu du Grimoire de l'app (thème, filtres,
+  onglets de niveau) pour éditer les sorts. Édite le profil **par défaut** codé en dur
+  (`calixDefaultProfile()`/`deneorDefaultProfile()` dans `index.html`), pas la sauvegarde
+  localStorage d'un joueur en cours de partie.
 
 Pas d'import/export de fichier JSON ni de "voir le code JS" dans cet outil (retirés en juillet
 2026 pour simplifier — l'unique flux de publication passe par GitHub) : seul le bouton "Publier"
@@ -450,8 +475,6 @@ toute nouvelle machine doit utiliser le nouveau nom ci-dessus.
   générique (ajout/suppression d'un personnage) — voir section Personnages plus haut.
 - Génération d'un `.apk` installable : voie recommandée — passer l'URL GitHub Pages dans
   PWABuilder.com pour générer un APK signé sans installer Android Studio.
-- Icône et animation de concentration : validées visuellement mais pourraient encore évoluer
-  (voir historique des commits sur `concentration`).
 
 ## Fichiers sources du brief original
 
