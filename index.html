@@ -993,11 +993,11 @@
             '<div style="font-size:12px;font-weight:600;color:var(--text-label);text-transform:uppercase;letter-spacing:0.08em">Emplacements de sorts</div>' +
             (spellGroupsHtml || '<div style="font-size:12px;color:var(--text-dim)">Aucun niveau actif - configurez-les dans les paramètres.</div>') +
           '</div>' +
+
+          '<div data-action="open-rest" style="flex:none;height:52px;border-radius:6px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;letter-spacing:0.03em" class="font-cinzel">Repos</div>' +
+
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none">' + combatStatsHtml + '</div>' +
         '</div>' +
-
-        '<div data-action="open-rest" style="flex:none;height:52px;border-radius:6px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;letter-spacing:0.03em" class="font-cinzel">Repos</div>' +
-
-        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none">' + combatStatsHtml + '</div>' +
       '</div>'
     );
   }
