@@ -137,21 +137,21 @@
     pointer-events: none;
   }
   @keyframes concentration-toast-in {
-    from { transform: translateX(-50%) translateY(140%); opacity: 0; }
+    from { transform: translateX(-50%) translateY(-140%); opacity: 0; }
     to { transform: translateX(-50%) translateY(0); opacity: 1; }
   }
   @keyframes concentration-toast-out {
     from { transform: translateX(-50%) translateY(0); opacity: 1; }
-    to { transform: translateX(-50%) translateY(140%); opacity: 0; }
+    to { transform: translateX(-50%) translateY(-140%); opacity: 0; }
   }
   .concentration-toast {
     position: fixed;
     left: 50%;
-    bottom: max(18px, env(safe-area-inset-bottom) + 14px);
+    top: max(18px, env(safe-area-inset-top) + 14px);
     transform: translateX(-50%);
     z-index: 80;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
     width: min(92vw, 400px);
     padding: 14px 14px 14px 16px;
@@ -1677,9 +1677,9 @@
     ui.concentrationToastEnterPending = false;
     var anim = ui.concentrationToast.leaving ? 'concentration-toast-leave' : (entering ? 'concentration-toast-enter' : '');
     return '<div class="concentration-toast ' + anim + '">' +
-      '<div style="flex:none;margin-top:1px">' + ICON_CONCENTRATION + '</div>' +
+      '<div style="flex:none;display:flex;align-items:center">' + ICON_CONCENTRATION + '</div>' +
       '<div style="flex:1;min-width:0;font-size:13.5px;font-weight:600;line-height:1.4">Vous êtes concentré et venez de subir des dégâts, pensez en jet de sauvegarde !</div>' +
-      '<div data-action="dismiss-concentration-toast" style="flex:none;width:24px;height:24px;margin:-2px -2px 0 0;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0.85">' + iconClose() + '</div>' +
+      '<div data-action="dismiss-concentration-toast" style="flex:none;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0.85">' + iconClose() + '</div>' +
     '</div>';
   }
 
