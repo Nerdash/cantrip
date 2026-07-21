@@ -411,36 +411,48 @@ https://nerdash.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-
 (stats). Sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`,
 indépendante de `jdr_character_tracker_state`).
 
-En haut de page : un menu déroulant pour choisir le personnage actif (Calix/Deneor, `#charSelect`),
-puis deux boutons de mode (`ui.mode`, `'personnage'` | `'grimoire'`) — **"Personnage"**
-en premier, **"Grimoire"** ensuite — qui affichent l'un ou l'autre panneau (`#personPanel` /
-`#phone`) sans jamais montrer les deux à la fois. Le panneau "Personnage" reproduit tout
-ce qui est éditable dans "Paramétrer le Personnage" en jeu (PV, Combat, Attaques, Emplacements de
-sorts, Ressources de classe, Caractéristiques, Jets de sauvegarde, Compétences, Sorts préparés pour
-Deneor, Or) ; le panneau "Grimoire" reproduit le rendu du Grimoire de l'app (thème, filtres,
-onglets de niveau) pour éditer les sorts. Édite le profil **par défaut** codé en dur
-(`calixDefaultProfile()`/`deneorDefaultProfile()` dans `index.html`), pas la sauvegarde
-localStorage d'un joueur en cours de partie.
+Barre du haut en 3 zones (`.topbar`, CSS Grid `1fr auto 1fr` — la zone centrale reste
+mathématiquement centrée quelle que soit la largeur des zones latérales, qui peuvent chacune
+passer sur 2 lignes si la fenêtre est étroite plutôt que de chevaucher le centre) :
+- **Gauche** : titre + deux boutons de personnage (`#btnCharCalix`/`#btnCharDeneor`, `ui.activeChar`)
+  à la place d'un ancien menu déroulant.
+- **Centre, toujours affichée au milieu de la barre** : deux boutons de mode (`ui.mode`,
+  `'personnage'` | `'grimoire'`) — **"Personnage"** puis **"Grimoire"** — qui affichent l'un ou
+  l'autre panneau (`#personPanel` / `#phone`) sans jamais montrer les deux à la fois. Le panneau
+  "Personnage" reproduit tout ce qui est éditable dans "Paramétrer le Personnage" en jeu (PV,
+  Combat, Attaques, Emplacements de sorts, Ressources de classe, Caractéristiques, Jets de
+  sauvegarde, Compétences, Sorts préparés pour Deneor, Or) ; le panneau "Grimoire" reproduit le
+  rendu du Grimoire de l'app (thème, filtres, onglets de niveau) pour éditer les sorts. Édite le
+  profil **par défaut** codé en dur (`calixDefaultProfile()`/`deneorDefaultProfile()` dans
+  `index.html`), pas la sauvegarde localStorage d'un joueur en cours de partie.
+- **Droite** : un bouton roue crantée (`#btnGearMenu`, icône SVG) ouvrant un sous-menu
+  (`#gearDropdown`, fermé au clic extérieur ou sur son unique item) contenant "Token GitHub" ;
+  puis le bouton **"Publier"** (renommé depuis "Publier sur GitHub").
 
 Pas d'import/export de fichier JSON ni de "voir le code JS" dans cet outil (retirés en juillet
-2026 pour simplifier — l'unique flux de publication passe par GitHub) : seul le bouton **"Publier
-sur GitHub"** fait remonter les modifications, en committant **à la fois** le Grimoire
+2026 pour simplifier — l'unique flux de publication passe par GitHub) : seul le bouton "Publier"
+fait remonter les modifications, en committant **à la fois** le Grimoire
 (`SPELLBOOK`/`DENEOR_SPELLBOOK`) et les deux personnages (`calixDefaultProfile`/
 `deneorDefaultProfile`) dans `index.html`, quel que soit le mode affiché à l'écran au moment du
-clic. Commite directement sur `master` via l'API GitHub Contents. Nécessite un token GitHub
-(bouton "Token GitHub" — PAT fine-grained scope repo `Nerdash/cantrip`, permission
-`Contents: Read and write` uniquement) stocké dans le `localStorage` **du navigateur utilisé**,
-jamais transmis ailleurs qu'à `api.github.com`. Comme le dépôt est public et l'outil accessible
-sans authentification, ce choix expose une page avec un flux d'écriture sur `master` à qui la
-trouverait et disposerait de son propre token — risque jugé acceptable (pas d'accès en écriture
-sans token valide, chaque navigateur a le sien). Le remplacement des blocs `var SPELLBOOK = {...}`
-/ `var DENEOR_SPELLBOOK = {...}` et des objets littéraux passés à `sanitizeProfile({...})` dans
-`calixDefaultProfile()`/`deneorDefaultProfile()` se fait par comptage d'accolades hors chaînes
-(fonctions `replaceVarBlock`/`replaceProfileBlock`, gèrent l'échappement dans les chaînes
-simples/doubles) plutôt que par regex naïve, pour ne pas dépendre d'un format figé. Committe aussi
-une deuxième fois `sw.js` en incrémentant `CACHE_NAME` (voir section Service Worker), pour
-respecter la convention déjà en place. Token à créer une fois par navigateur/machine (pas de
-synchronisation entre le PC fixe et le portable).
+clic. Commite directement sur `master` via l'API GitHub Contents. Nécessite un token GitHub (item
+"Token GitHub" du sous-menu roue crantée — PAT fine-grained scope repo `Nerdash/cantrip`,
+permission `Contents: Read and write` uniquement) stocké dans le `localStorage` **du navigateur
+utilisé**, jamais transmis ailleurs qu'à `api.github.com`. Comme le dépôt est public et l'outil
+accessible sans authentification, ce choix expose une page avec un flux d'écriture sur `master` à
+qui la trouverait et disposerait de son propre token — risque jugé acceptable (pas d'accès en
+écriture sans token valide, chaque navigateur a le sien). Le remplacement des blocs
+`var SPELLBOOK = {...}` / `var DENEOR_SPELLBOOK = {...}` et des objets littéraux passés à
+`sanitizeProfile({...})` dans `calixDefaultProfile()`/`deneorDefaultProfile()` se fait par
+comptage d'accolades hors chaînes (fonctions `replaceVarBlock`/`replaceProfileBlock`, gèrent
+l'échappement dans les chaînes simples/doubles) plutôt que par regex naïve, pour ne pas dépendre
+d'un format figé. Committe aussi une deuxième fois `sw.js` en incrémentant `CACHE_NAME` (voir
+section Service Worker), pour respecter la convention déjà en place. Token à créer une fois par
+navigateur/machine (pas de synchronisation entre le PC fixe et le portable).
+
+Le thème visuel (`data-theme`, voir section Thèmes plus haut) est posé sur `document.documentElement`
+(pas sur `<body>`) pour matcher les sélecteurs CSS `:root[data-theme="deneor"]` — bug corrigé
+juillet 2026 (le thème Deneor ne s'appliquait jamais visuellement avant ce correctif, même si les
+données du personnage changeaient bien).
 
 ## Git — spécifique à cette machine, à reconfigurer sur toute nouvelle installation
 
