@@ -97,8 +97,9 @@
   }
   .font-cinzel { font-family: 'Cinzel', serif; }
   input::placeholder { color: var(--text-dim); }
-  .hscroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x; }
+  .hscroll { scrollbar-width: none; -ms-overflow-style: none; touch-action: pan-x pan-y; }
   .hscroll::-webkit-scrollbar { display: none; }
+  [data-scroll-root] { -webkit-overflow-scrolling: touch; }
   .badge { flex: none; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; user-select: none; }
   .badge-used { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.45); color: var(--accent-red-text); font-weight: 600; }
   .badge-available { background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.5); color: var(--accent-green-text); font-weight: 700; }
