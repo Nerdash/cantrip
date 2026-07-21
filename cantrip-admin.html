@@ -81,10 +81,6 @@
   }
   .topbar h1{font-size:19px;margin:0;letter-spacing:0.02em;color:var(--text-gold);}
   .topbar .sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;}
-  .char-select{
-    border:1px solid var(--border-strong);background:var(--bg-card);color:var(--text-main);
-    padding:9px 30px 9px 14px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;
-  }
   .btn{
     border:1px solid var(--border-strong);background:transparent;color:var(--text-gold);
     padding:9px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;
@@ -223,7 +219,8 @@
     <h1 class="font-cinzel">Cantrip - Admin</h1>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <select class="char-select" id="charSelect"></select>
+    <button class="btn" id="btnCharCalix">Calix Noctavel</button>
+    <button class="btn" id="btnCharDeneor">Deneor Sentariel</button>
     <button class="btn" id="btnModePersonnage">Personnage</button>
     <button class="btn" id="btnModeGrimoire">Grimoire</button>
     <button class="btn" id="btnGithubToken">Token GitHub</button>
@@ -753,7 +750,6 @@ function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { showToast('Erreur de sauvegarde locale', true); }
 }
 
-function charLabel(c) { return c === 'deneor' ? 'Deneor Sentariel' : 'Calix Noctavel'; }
 function activeSections() { return state[ui.activeChar]; }
 function personProfile() { return state.profiles[ui.activeChar]; }
 
@@ -802,12 +798,13 @@ function levelTabLabel(level) { return level === 'classe' ? 'Classe' : String(le
 function render() {
   document.documentElement.setAttribute('data-theme', ui.activeChar === 'deneor' ? 'deneor' : 'calix');
 
-  // character dropdown
-  var sel = document.getElementById('charSelect');
-  sel.innerHTML = ['calix', 'deneor'].map(function (c) {
-    return '<option value="' + c + '"' + (ui.activeChar === c ? ' selected' : '') + '>' + charLabel(c) + '</option>';
-  }).join('');
-  sel.onchange = function () { ui.activeChar = sel.value; ui.activeLevel = null; render(); };
+  // character buttons
+  var btnCalix = document.getElementById('btnCharCalix');
+  var btnDeneor = document.getElementById('btnCharDeneor');
+  btnCalix.className = 'btn' + (ui.activeChar === 'calix' ? ' primary' : '');
+  btnDeneor.className = 'btn' + (ui.activeChar === 'deneor' ? ' primary' : '');
+  btnCalix.onclick = function () { ui.activeChar = 'calix'; ui.activeLevel = null; render(); };
+  btnDeneor.onclick = function () { ui.activeChar = 'deneor'; ui.activeLevel = null; render(); };
 
   // mode buttons (Personnage / Grimoire)
   var btnPerso = document.getElementById('btnModePersonnage');
