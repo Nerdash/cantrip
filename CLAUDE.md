@@ -365,8 +365,9 @@ versionné (`cantrip-vNN`, voir `sw.js` pour la valeur actuelle) — **incrémen
 
 ## Déploiement
 
-- Dépôt : https://github.com/Nerdash/cantrip (public, compte GitHub "Nerdash")
-- **Prod** (GitHub Pages, HTTPS, installable en PWA) : https://nerdash.github.io/cantrip/ —
+- Dépôt : https://github.com/benwatz/cantrip (public, compte GitHub "benwatz" — renommé depuis
+  "Nerdash" en juillet 2026, même compte/ID sous-jacent)
+- **Prod** (GitHub Pages, HTTPS, installable en PWA) : https://benwatz.github.io/cantrip/ —
   déploiement automatique à chaque push sur `master`, qui sert directement `index.html` à la
   racine (pas de pipeline CI, pas de dossier `dist`). `.nojekyll` présent pour désactiver le
   traitement Jekyll.
@@ -378,7 +379,7 @@ versionné (`cantrip-vNN`, voir `sw.js` pour la valeur actuelle) — **incrémen
 
 Page statique **indépendante** de l'app (pas de logique partagée, pas de `state` commun),
 ajoutée à la racine du dépôt et servie sur GitHub Pages à
-https://nerdash.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-admin-grimoire.html`
+https://benwatz.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-admin-grimoire.html`
 (juillet 2026) quand l'outil s'est étendu de l'édition du Grimoire à celle des personnages
 (stats). Sauvegarde locale automatique (`localStorage`, clé `cantrip_admin_grimoire_v1`,
 indépendante de `jdr_character_tracker_state`).
@@ -407,7 +408,7 @@ fait remonter les modifications, en committant **à la fois** le Grimoire
 (`SPELLBOOK`/`DENEOR_SPELLBOOK`) et les deux personnages (`calixDefaultProfile`/
 `deneorDefaultProfile`) dans `index.html`, quel que soit le mode affiché à l'écran au moment du
 clic. Commite directement sur `master` via l'API GitHub Contents. Nécessite un token GitHub (item
-"Token GitHub" du sous-menu roue crantée — PAT fine-grained scope repo `Nerdash/cantrip`,
+"Token GitHub" du sous-menu roue crantée — PAT fine-grained scope repo `benwatz/cantrip`,
 permission `Contents: Read and write` uniquement) stocké dans le `localStorage` **du navigateur
 utilisé**, jamais transmis ailleurs qu'à `api.github.com`. Comme le dépôt est public et l'outil
 accessible sans authentification, ce choix expose une page avec un flux d'écriture sur `master` à
@@ -431,11 +432,14 @@ données du personnage changeaient bien).
 L'identité Git de ce dépôt est configurée **localement** (pas globalement), pour ne pas exposer
 l'email réel dans l'historique public :
 ```
-git config user.name "Nerdash"
-git config user.email "124379495+Nerdash@users.noreply.github.com"
+git config user.name "benwatz"
+git config user.email "124379495+benwatz@users.noreply.github.com"
 ```
 Cette config est dans `.git/config`, donc **pas transmise par un `git clone`** — à relancer sur
-toute nouvelle machine avant de committer.
+toute nouvelle machine avant de committer. Compte GitHub renommé "Nerdash" → "benwatz" en
+juillet 2026 (même compte/ID, `124379495`) : les anciens commits signés avec l'ancien
+`user.email` restent correctement attribués au compte (GitHub associe par ID, pas par nom), mais
+toute nouvelle machine doit utiliser le nouveau nom ci-dessus.
 
 ## Reste à faire / pistes non traitées
 
