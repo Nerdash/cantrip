@@ -6,6 +6,7 @@
 <title>Cantrip - Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --bg-gradient-1: #f6ecd2;
@@ -1458,12 +1459,22 @@ function renderSidePanel() {
       '<p>Ce formulaire regroupe tout ce qui est editable dans "Parametrer le Personnage" en jeu : PV, ' +
       'Combat, Attaques, Emplacements de sorts, Ressources de classe, Caracteristiques, Jets de ' +
       'sauvegarde, Competences' + (ui.activeChar === 'deneor' ? ', Sorts prepares' : '') + ' et Or.</p>' +
-      '<p>Ça edite le profil <b>par defaut</b> code en dur (calixDefaultProfile()/deneorDefaultProfile() ' +
-      'dans index.html) — pas la sauvegarde localStorage d\'un joueur en cours de partie. Les changements ' +
-      'affectent les nouvelles installations et les reinitialisations, pas les parties deja en cours.</p>' +
+      '<p>"Publier" edite le profil <b>par defaut</b> code en dur (calixDefaultProfile()/' +
+      'deneorDefaultProfile() dans index.html) — affecte les nouvelles installations et les ' +
+      'reinitialisations, pas les parties deja en cours.</p>' +
+      '<p>"Sauvegarder sur Drive" ecrit ce profil dans <code>bdd.json</code> sur Google Drive, la ' +
+      'source que l\'app charge/sauvegarde en jeu (page "Charger un personnage") — ça <b>ecrase la ' +
+      'progression sauvegardee par un joueur</b> pour ce personnage avec un profil frais (PV au max, ' +
+      'rien d\'utilise). "Charger depuis Drive" fait l\'inverse : recupere dans ce formulaire ce qu\'un ' +
+      'joueur a sauvegarde en jeu.</p>' +
       '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
-    actions.innerHTML = '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>';
+    actions.innerHTML =
+      '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>' +
+      '<button class="btn" id="btnDriveLoad">Charger depuis Drive</button>' +
+      '<button class="btn primary" id="btnDriveSave">Sauvegarder sur Drive</button>';
     document.getElementById('btnResetMode').addEventListener('click', resetPersonnage);
+    document.getElementById('btnDriveLoad').addEventListener('click', driveLoadPersonnage);
+    document.getElementById('btnDriveSave').addEventListener('click', driveSavePersonnage);
   }
 }
 
@@ -1577,6 +1588,158 @@ function deriveFullProfile(charId) {
     preparedSpells: p.preparedSpells.slice(),
     gold: p.gold
   };
+}
+
+// ---- synchronisation Google Drive (bdd.json) — memes fonctions que index.html, dupliquees ----
+// Client ID OAuth d'appli web : destine a etre embarque dans le JS client, pas un secret.
+var GOOGLE_CLIENT_ID = '653846859488-9fkauatcjch80v83ngdvk95t17gphrq1.apps.googleusercontent.com';
+var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+var DRIVE_META_KEY = 'cantrip_drive_meta'; // { folderId, fileId } — partage avec index.html (meme origine)
+
+var driveTokenClient = null;
+var driveAccessToken = null;
+var driveAccessTokenExpiry = 0;
+
+function driveMeta() {
+  try { return JSON.parse(localStorage.getItem(DRIVE_META_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveDriveMeta(meta) {
+  try { localStorage.setItem(DRIVE_META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+
+function driveEnsureToken() {
+  if (driveAccessToken && Date.now() < driveAccessTokenExpiry) return Promise.resolve(driveAccessToken);
+  return new Promise(function (resolve, reject) {
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+      reject(new Error('Connexion Google indisponible (hors ligne ?)'));
+      return;
+    }
+    if (!driveTokenClient) {
+      driveTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: DRIVE_SCOPE,
+        callback: function () {}
+      });
+    }
+    driveTokenClient.callback = function (resp) {
+      if (resp.error) { reject(new Error('Connexion Google refusee (' + resp.error + ')')); return; }
+      driveAccessToken = resp.access_token;
+      driveAccessTokenExpiry = Date.now() + (resp.expires_in - 60) * 1000;
+      resolve(driveAccessToken);
+    };
+    driveTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
+function driveHeaders(token) {
+  return { 'Authorization': 'Bearer ' + token };
+}
+
+function driveFindBddFile(token) {
+  var q = "name = 'bdd.json' and trashed = false";
+  return fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id)&spaces=drive', { headers: driveHeaders(token) })
+    .then(function (res) { return res.json(); })
+    .then(function (json) { return (json.files && json.files[0]) ? json.files[0].id : null; });
+}
+
+function driveCreateFolder(token) {
+  return fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, driveHeaders(token)),
+    body: JSON.stringify({ name: 'Cantrip', mimeType: 'application/vnd.google-apps.folder' })
+  }).then(function (res) { return res.json(); }).then(function (json) { return json.id; });
+}
+
+function driveCreateBddFile(token, folderId) {
+  return fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, driveHeaders(token)),
+    body: JSON.stringify({ name: 'bdd.json', parents: [folderId], mimeType: 'application/json' })
+  }).then(function (res) { return res.json(); }).then(function (json) { return json.id; });
+}
+
+function driveEnsureFile(token) {
+  var meta = driveMeta();
+  if (meta.fileId) return Promise.resolve(meta.fileId);
+  return driveFindBddFile(token).then(function (existingId) {
+    if (existingId) { saveDriveMeta({ fileId: existingId }); return existingId; }
+    return driveCreateFolder(token).then(function (folderId) {
+      return driveCreateBddFile(token, folderId).then(function (fileId) {
+        saveDriveMeta({ folderId: folderId, fileId: fileId });
+        return fileId;
+      });
+    });
+  });
+}
+
+function driveLoadBdd() {
+  return driveEnsureToken().then(function (token) {
+    return driveEnsureFile(token).then(function (fileId) {
+      return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', { headers: driveHeaders(token) })
+        .then(function (res) {
+          if (res.status === 404) return '';
+          if (!res.ok) throw new Error('Lecture de bdd.json : ' + res.status);
+          return res.text();
+        })
+        .then(function (text) {
+          if (!text) return {};
+          try { return JSON.parse(text) || {}; } catch (e) { return {}; }
+        });
+    });
+  });
+}
+
+function driveSaveBdd(mutateFn) {
+  return driveEnsureToken().then(function (token) {
+    return driveEnsureFile(token).then(function (fileId) {
+      return fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', { headers: driveHeaders(token) })
+        .then(function (res) { return res.ok ? res.text() : ''; })
+        .then(function (text) {
+          var current = {};
+          if (text) { try { current = JSON.parse(text) || {}; } catch (e) {} }
+          var updated = mutateFn(current);
+          return fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media', {
+            method: 'PATCH',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, driveHeaders(token)),
+            body: JSON.stringify(updated, null, 2)
+          }).then(function (res) {
+            if (!res.ok) throw new Error('Ecriture de bdd.json : ' + res.status);
+            return updated;
+          });
+        });
+    });
+  });
+}
+
+function driveLoadPersonnage() {
+  var charId = ui.activeChar;
+  showToast('Chargement depuis Drive...');
+  driveLoadBdd().then(function (bdd) {
+    var entry = bdd && bdd[charId];
+    if (!entry || typeof entry !== 'object') throw new Error('Aucune sauvegarde pour ce personnage dans bdd.json sur Drive.');
+    sanitizeAdminProfile(entry);
+    state.profiles[charId] = entry;
+    saveState();
+    render();
+    showToast('Personnage charge depuis Drive');
+  }).catch(function (err) {
+    showToast(err.message || 'Echec du chargement Drive', true);
+  });
+}
+
+function driveSavePersonnage() {
+  var charId = ui.activeChar;
+  if (!confirm('Ceci ecrase la sauvegarde "' + CHARACTER_NAMES[charId] + '" dans bdd.json sur Drive avec le profil actuel de cet outil admin (PV au max, emplacements/ressources non utilises). Toute progression en jeu deja sauvegardee par un joueur pour ce personnage sera perdue. Continuer ?')) return;
+  var full = deriveFullProfile(charId);
+  showToast('Sauvegarde sur Drive...');
+  driveSaveBdd(function (bdd) {
+    bdd[charId] = full;
+    return bdd;
+  }).then(function () {
+    showToast('Personnage sauvegarde sur Drive');
+  }).catch(function (err) {
+    showToast(err.message || 'Echec de la sauvegarde Drive', true);
+  });
 }
 
 // ---- publication directe sur GitHub (token cote client, jamais transmis ailleurs qu'a l'API GitHub) ----
