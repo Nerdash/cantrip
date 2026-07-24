@@ -74,7 +74,6 @@
     transition: background 0.2s;
   }
   .font-cinzel { font-family:'Cinzel', serif; }
-  .mono { font-family:'JetBrains Mono', monospace; }
 
   .topbar{
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
@@ -94,22 +93,6 @@
   .btn.small{padding:5px 10px;font-size:11px;}
   .btn.danger{border-color:var(--accent-red-text);color:var(--accent-red-text);}
   .btn.danger:hover{background:var(--accent-red-text);color:#fff;}
-  .btn.icon-btn{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;}
-
-  .gear-menu{position:relative;}
-  .gear-dropdown{
-    display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:160px;
-    background:var(--admin-panel);border:1px solid var(--border-strong);border-radius:8px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.35);padding:6px;z-index:50;
-  }
-  .gear-dropdown.open{display:block;}
-  .gear-dropdown-item{
-    display:block;width:100%;text-align:left;background:transparent;border:none;
-    padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;
-    color:var(--text-gold);font-family:inherit;
-  }
-  .gear-dropdown-item:hover{background:var(--border-strong);color:var(--ink-bright);}
-
   .layout{display:flex;gap:26px;padding:26px;max-width:1200px;margin:0 auto;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
 
   .phone{
@@ -242,18 +225,8 @@
   <div class="topbar-right">
     <button class="btn" id="btnModePersonnage">Personnage</button>
     <button class="btn" id="btnModeGrimoire">Grimoire</button>
-    <div class="gear-menu" id="gearMenu">
-      <button class="btn icon-btn" id="btnGearMenu" title="Paramètres" aria-label="Paramètres">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:block;">
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-      </button>
-      <div class="gear-dropdown" id="gearDropdown">
-        <button class="gear-dropdown-item" id="btnGithubToken">Token GitHub</button>
-      </div>
-    </div>
-    <button class="btn primary" id="btnPublishGithub">Publier</button>
+    <button class="btn" id="btnDriveLoad">Charger</button>
+    <button class="btn primary" id="btnDriveSave">Sauvegarder</button>
   </div>
 </div>
 
@@ -368,31 +341,6 @@
     <div class="modal-actions">
       <div></div>
       <div class="right"><button type="button" class="btn" id="btnCloseLevelModal">Fermer</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: GitHub token -->
-<div class="modal-backdrop" id="tokenModalBackdrop">
-  <div class="modal" style="max-width:480px;">
-    <h3>Token GitHub</h3>
-    <p style="font-size:12.5px;color:var(--text-desc);margin-top:-8px;">
-      Cree un <b>Personal Access Token</b> GitHub de type <i>fine-grained</i>, limite au depot
-      <span class="mono">benwatz/cantrip</span>, avec uniquement la permission
-      <b>Contents : Read and write</b>. Il est enregistre uniquement dans le stockage local de
-      <b>ce navigateur</b> et n'est jamais envoye ailleurs qu'a l'API GitHub (api.github.com).
-    </p>
-    <div class="field">
-      <label>Token</label>
-      <input type="password" id="gh_token" placeholder="github_pat_...">
-    </div>
-    <div class="sub" id="tokenStatus" style="margin-bottom:6px;"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn danger" id="btnClearToken">Supprimer le token</button>
-      <div class="right">
-        <button type="button" class="btn" id="btnCloseTokenModal">Fermer</button>
-        <button type="button" class="btn primary" id="btnSaveToken">Enregistrer</button>
-      </div>
     </div>
   </div>
 </div>
@@ -842,6 +790,9 @@ function render() {
   btnGrim.className = 'btn' + (ui.mode === 'grimoire' ? ' primary' : '');
   btnPerso.onclick = function () { ui.mode = 'personnage'; render(); };
   btnGrim.onclick = function () { ui.mode = 'grimoire'; render(); };
+
+  document.getElementById('btnDriveLoad').onclick = driveLoadPersonnage;
+  document.getElementById('btnDriveSave').onclick = driveSavePersonnage;
 
   document.getElementById('phone').style.display = ui.mode === 'grimoire' ? 'flex' : 'none';
   document.getElementById('personPanel').style.display = ui.mode === 'personnage' ? 'flex' : 'none';
@@ -1447,7 +1398,9 @@ function renderSidePanel() {
     title.textContent = 'Comment ça marche (Grimoire)';
     body.innerHTML =
       '<p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Clique sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>' +
-      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
+      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur. Utilise "Charger"/' +
+      '"Sauvegarder" en haut a droite pour synchroniser ce grimoire (avec le profil du personnage) ' +
+      'via <code>bdd.json</code> sur Google Drive, la source que l\'app charge/sauvegarde en jeu.</p>';
     actions.innerHTML =
       '<button class="btn" id="btnAddLevel">Gerer les niveaux</button>' +
       '<button class="btn" id="btnResetMode">Reinitialiser le Grimoire</button>';
@@ -1459,90 +1412,17 @@ function renderSidePanel() {
       '<p>Ce formulaire regroupe tout ce qui est editable dans "Parametrer le Personnage" en jeu : PV, ' +
       'Combat, Attaques, Emplacements de sorts, Ressources de classe, Caracteristiques, Jets de ' +
       'sauvegarde, Competences' + (ui.activeChar === 'deneor' ? ', Sorts prepares' : '') + ' et Or.</p>' +
-      '<p>"Publier" edite le profil <b>par defaut</b> code en dur (calixDefaultProfile()/' +
-      'deneorDefaultProfile() dans index.html) — affecte les nouvelles installations et les ' +
-      'reinitialisations, pas les parties deja en cours.</p>' +
-      '<p>"Sauvegarder sur Drive" ecrit ce profil <b>et le Grimoire de ce personnage</b> (tel qu\'edite ' +
-      'dans le panneau "Grimoire") dans <code>bdd.json</code> sur Google Drive, la source que l\'app ' +
-      'charge/sauvegarde en jeu (page "Charger un personnage") — ça <b>ecrase la progression ' +
+      '<p>"Sauvegarder" (en haut a droite) ecrit ce profil <b>et le Grimoire de ce personnage</b> (tel ' +
+      'qu\'edite dans le panneau "Grimoire") dans <code>bdd.json</code> sur Google Drive, la source que ' +
+      'l\'app charge/sauvegarde en jeu (page "Charger un personnage") — ça <b>ecrase la progression ' +
       'sauvegardee par un joueur</b> pour ce personnage avec un profil frais (PV au max, rien ' +
-      'd\'utilise). "Charger depuis Drive" fait l\'inverse : recupere dans ce formulaire et dans le ' +
-      'panneau Grimoire ce qu\'un joueur a sauvegarde en jeu.</p>' +
+      'd\'utilise). "Charger" fait l\'inverse : recupere dans ce formulaire et dans le panneau Grimoire ' +
+      'ce qu\'un joueur a sauvegarde en jeu.</p>' +
       '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
     actions.innerHTML =
-      '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>' +
-      '<button class="btn" id="btnDriveLoad">Charger depuis Drive</button>' +
-      '<button class="btn primary" id="btnDriveSave">Sauvegarder sur Drive</button>';
+      '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>';
     document.getElementById('btnResetMode').addEventListener('click', resetPersonnage);
-    document.getElementById('btnDriveLoad').addEventListener('click', driveLoadPersonnage);
-    document.getElementById('btnDriveSave').addEventListener('click', driveSavePersonnage);
   }
-}
-
-// ---- export ----
-function jsStr(s) {
-  return '"' + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
-}
-function spellToJsLine(spell) {
-  var parts = [];
-  parts.push('name: ' + jsStr(spell.name));
-  parts.push('type: ' + jsStr(spell.type));
-  parts.push('range: ' + jsStr(spell.range));
-  if (spell.alwaysAvailable) parts.push('alwaysAvailable: true');
-  parts.push('desc: ' + jsStr(spell.desc));
-  if (spell.note) parts.push('note: ' + jsStr(spell.note));
-  return '{ ' + parts.join(', ') + ' }';
-}
-function sectionToJs(section) {
-  var levelLit = section.level === 'classe' ? "'classe'" : section.level;
-  var spellsLit = section.spells.map(function (s) { return '          ' + spellToJsLine(s); }).join(',\n');
-  return '      {\n        title: ' + jsStr(section.title) + ',\n        levelTag: ' + jsStr(section.levelTag) + ',\n        level: ' + levelLit + ',\n        spells: [\n' + spellsLit + '\n        ]\n      }';
-}
-function exportCharCode(c) {
-  var varName = c === 'deneor' ? 'DENEOR_SPELLBOOK' : 'SPELLBOOK';
-  var sections = state[c];
-  var order = levelOrder(sections);
-  var ordered = order.map(function (lvl) { return sections.filter(function (s) { return s.level === lvl; })[0]; });
-  var sectionsLit = ordered.map(sectionToJs).join(',\n');
-  return '  var ' + varName + ' = {\n    sections: [\n' + sectionsLit + '\n    ]\n  };';
-}
-
-// Génère le texte de l'objet littéral tel qu'il doit apparaître dans
-// calixDefaultProfile()/deneorDefaultProfile() (dans sanitizeProfile({ ... })) : tous les champs
-// explicites, used[]/current dérivés de max/type (profil par défaut toujours "frais").
-function jsNumArr(arr) { return '[' + arr.map(function (v) { return String(v); }).join(', ') + ']'; }
-function jsStrArr(arr) { return '[' + arr.map(function (v) { return jsStr(v); }).join(', ') + ']'; }
-function exportProfileCode(charId) {
-  var full = deriveFullProfile(charId);
-  var indent = '      ';
-  var lines = [];
-  lines.push('characterName: ' + jsStr(full.characterName));
-  lines.push('hp: { current: ' + full.hp.current + ', max: ' + full.hp.max + ', temp: ' + full.hp.temp + ' }');
-  lines.push('combatStats: { ac: ' + full.combatStats.ac + ', initiative: ' + full.combatStats.initiative + ', speed: ' + full.combatStats.speed + ' }');
-  lines.push('spellLevels: [\n' + full.spellLevels.map(function (l) {
-    return indent + '  { level: ' + l.level + ', enabled: ' + l.enabled + ', max: ' + l.max + ', used: ' + jsNumArr(l.used.map(function () { return false; })) + ' }';
-  }).join(',\n') + '\n' + indent + ']');
-  lines.push('classResources: [\n' + full.classResources.map(function (cr) {
-    var fields = ['id: ' + jsStr(cr.id), 'label: ' + jsStr(cr.label), 'max: ' + cr.max];
-    if (cr.type === 'counter') fields.push('type: ' + jsStr('counter'), 'current: ' + cr.current, 'used: []');
-    else fields.push('used: ' + jsNumArr(cr.used.map(function () { return false; })));
-    return indent + '  { ' + fields.join(', ') + ' }';
-  }).join(',\n') + '\n' + indent + ']');
-  if (full.attacks.length) {
-    lines.push('attacks: [\n' + full.attacks.map(function (a) {
-      return indent + '  { id: ' + jsStr(a.id) + ', name: ' + jsStr(a.name) + ', melee: ' + a.melee + ', rangeMeters: ' + a.rangeMeters + ', attackBonus: ' + a.attackBonus + ', damageDice: ' + jsStr(a.damageDice) + ', damageBonus: ' + a.damageBonus + ', damageType: ' + jsStr(a.damageType) + ' }';
-    }).join(',\n') + '\n' + indent + ']');
-  }
-  lines.push('concentration: ' + full.concentration);
-  lines.push('inspiration: ' + full.inspiration);
-  lines.push('abilityScores: { ' + ABILITY_KEYS.map(function (k) { return k + ': ' + full.abilityScores[k]; }).join(', ') + ' }');
-  lines.push('savingThrows: { ' + ABILITY_KEYS.map(function (k) { return k + ': ' + full.savingThrows[k]; }).join(', ') + ' }');
-  lines.push('skills: [\n' + full.skills.map(function (s) {
-    return indent + '  { name: ' + jsStr(s.name) + ', modifier: ' + s.modifier + ' }';
-  }).join(',\n') + '\n' + indent + ']');
-  if (full.preparedSpells.length) lines.push('preparedSpells: ' + jsStrArr(full.preparedSpells));
-  if (full.gold) lines.push('gold: ' + full.gold);
-  return '{\n' + lines.map(function (l) { return indent + l; }).join(',\n') + '\n    }';
 }
 
 // ---- toast ----
@@ -1749,211 +1629,6 @@ function driveSavePersonnage() {
     showToast(err.message || 'Echec de la sauvegarde Drive', true);
   });
 }
-
-// ---- publication directe sur GitHub (token cote client, jamais transmis ailleurs qu'a l'API GitHub) ----
-var GH_OWNER = 'benwatz';
-var GH_REPO = 'cantrip';
-var GH_BRANCH = 'master';
-var GH_TOKEN_KEY = 'cantrip_admin_gh_token';
-
-function getGhToken() { return localStorage.getItem(GH_TOKEN_KEY) || ''; }
-function setGhToken(t) { localStorage.setItem(GH_TOKEN_KEY, t); }
-function clearGhToken() { localStorage.removeItem(GH_TOKEN_KEY); }
-
-function utf8ToB64(str) {
-  var bytes = new TextEncoder().encode(str);
-  var binary = '';
-  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-function b64ToUtf8(b64) {
-  var binary = atob(b64.replace(/\n/g, ''));
-  var bytes = new Uint8Array(binary.length);
-  for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new TextDecoder('utf-8').decode(bytes);
-}
-
-function ghHeaders() {
-  return {
-    'Authorization': 'Bearer ' + getGhToken(),
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28'
-  };
-}
-
-function ghGetFile(path) {
-  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path + '?ref=' + GH_BRANCH, { headers: ghHeaders() })
-    .then(function (res) {
-      if (!res.ok) return res.json().then(function (body) { throw new Error('Lecture de ' + path + ' : ' + res.status + ' ' + (body.message || res.statusText)); });
-      return res.json();
-    })
-    .then(function (json) { return { sha: json.sha, content: b64ToUtf8(json.content) }; });
-}
-
-function ghPutFile(path, content, sha, message) {
-  return fetch('https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + path, {
-    method: 'PUT',
-    headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders()),
-    body: JSON.stringify({ message: message, content: utf8ToB64(content), sha: sha, branch: GH_BRANCH })
-  }).then(function (res) {
-    if (!res.ok) return res.json().then(function (body) { throw new Error('Ecriture de ' + path + ' : ' + res.status + ' ' + (body.message || res.statusText)); });
-    return res.json();
-  });
-}
-
-// Remplace un bloc "  var NOM = { ... };" par un nouveau bloc de meme forme, en comptant les
-// accolades hors chaines (guillemets simples/doubles, avec gestion de l'echappement) pour ne
-// pas etre perturbe par un texte de sort qui contiendrait lui-meme des accolades.
-function replaceVarBlock(source, varName, newBlock) {
-  var marker = '  var ' + varName + ' = {';
-  var startIdx = source.indexOf(marker);
-  if (startIdx === -1) throw new Error('Bloc "' + varName + '" introuvable dans index.html');
-  var i = startIdx + marker.length - 1; // position du '{' d'ouverture
-  var depth = 0;
-  var inStr = null;
-  for (; i < source.length; i++) {
-    var ch = source[i];
-    if (inStr) {
-      if (ch === '\\') { i++; continue; }
-      if (ch === inStr) inStr = null;
-      continue;
-    }
-    if (ch === '"' || ch === "'") { inStr = ch; continue; }
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) { i++; break; }
-    }
-  }
-  if (depth !== 0) throw new Error('Bloc "' + varName + '" mal forme (accolades non equilibrees)');
-  var endIdx = (source[i] === ';') ? i + 1 : i;
-  return source.slice(0, startIdx) + newBlock + source.slice(endIdx);
-}
-
-// Remplace uniquement l'objet littéral passé à sanitizeProfile({ ... }) dans
-// "function <funcName>() { return sanitizeProfile({...}); }", en laissant le reste de la fonction
-// intact. Même algorithme de comptage d'accolades hors chaînes que replaceVarBlock.
-function replaceProfileBlock(source, funcName, newObjectLiteral) {
-  var fnMarker = 'function ' + funcName + '() {';
-  var fnIdx = source.indexOf(fnMarker);
-  if (fnIdx === -1) throw new Error('Fonction "' + funcName + '" introuvable dans index.html');
-  var spMarker = 'sanitizeProfile(';
-  var spIdx = source.indexOf(spMarker, fnIdx);
-  if (spIdx === -1) throw new Error('"sanitizeProfile(" introuvable dans "' + funcName + '"');
-  var braceStart = source.indexOf('{', spIdx + spMarker.length);
-  if (braceStart === -1) throw new Error('Objet littéral introuvable dans "' + funcName + '"');
-  var i = braceStart;
-  var depth = 0;
-  var inStr = null;
-  for (; i < source.length; i++) {
-    var ch = source[i];
-    if (inStr) {
-      if (ch === '\\') { i++; continue; }
-      if (ch === inStr) inStr = null;
-      continue;
-    }
-    if (ch === '"' || ch === "'") { inStr = ch; continue; }
-    if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) { i++; break; }
-    }
-  }
-  if (depth !== 0) throw new Error('Objet littéral de "' + funcName + '" mal formé (accolades non équilibrées)');
-  return source.slice(0, braceStart) + newObjectLiteral + source.slice(i);
-}
-
-function bumpServiceWorkerCache(swSource) {
-  var m = swSource.match(/const CACHE_NAME = 'cantrip-v(\d+)';/);
-  if (!m) throw new Error('CACHE_NAME introuvable dans sw.js');
-  var next = parseInt(m[1], 10) + 1;
-  return swSource.replace(/const CACHE_NAME = 'cantrip-v\d+';/, "const CACHE_NAME = 'cantrip-v" + next + "';");
-}
-
-function updateTokenStatus() {
-  var el = document.getElementById('tokenStatus');
-  if (!el) return;
-  el.textContent = getGhToken() ? 'Un token est enregistre dans ce navigateur.' : 'Aucun token enregistre.';
-}
-
-document.getElementById('btnGearMenu').addEventListener('click', function (e) {
-  e.stopPropagation();
-  document.getElementById('gearDropdown').classList.toggle('open');
-});
-document.addEventListener('click', function () {
-  document.getElementById('gearDropdown').classList.remove('open');
-});
-document.getElementById('gearDropdown').addEventListener('click', function (e) { e.stopPropagation(); });
-
-document.getElementById('btnGithubToken').addEventListener('click', function () {
-  document.getElementById('gearDropdown').classList.remove('open');
-  document.getElementById('gh_token').value = '';
-  updateTokenStatus();
-  document.getElementById('tokenModalBackdrop').classList.add('open');
-});
-document.getElementById('btnCloseTokenModal').addEventListener('click', function () {
-  document.getElementById('tokenModalBackdrop').classList.remove('open');
-});
-document.getElementById('tokenModalBackdrop').addEventListener('click', function (e) {
-  if (e.target.id === 'tokenModalBackdrop') document.getElementById('tokenModalBackdrop').classList.remove('open');
-});
-document.getElementById('btnSaveToken').addEventListener('click', function () {
-  var v = document.getElementById('gh_token').value.trim();
-  if (!v) { showToast('Colle un token avant d\'enregistrer', true); return; }
-  setGhToken(v);
-  document.getElementById('gh_token').value = '';
-  updateTokenStatus();
-  showToast('Token enregistre dans ce navigateur');
-});
-document.getElementById('btnClearToken').addEventListener('click', function () {
-  clearGhToken();
-  document.getElementById('gh_token').value = '';
-  updateTokenStatus();
-  showToast('Token supprime');
-});
-
-function publishToGithub() {
-  var btn = document.getElementById('btnPublishGithub');
-  var originalLabel = btn.textContent;
-  btn.textContent = 'Publication en cours...';
-  btn.disabled = true;
-
-  ghGetFile('index.html')
-    .then(function (file) {
-      var updated = replaceVarBlock(file.content, 'SPELLBOOK', exportCharCode('calix'));
-      updated = replaceVarBlock(updated, 'DENEOR_SPELLBOOK', exportCharCode('deneor'));
-      updated = replaceProfileBlock(updated, 'calixDefaultProfile', exportProfileCode('calix'));
-      updated = replaceProfileBlock(updated, 'deneorDefaultProfile', exportProfileCode('deneor'));
-      return ghPutFile('index.html', updated, file.sha, 'Mise a jour du Grimoire et des personnages via l\'outil admin');
-    })
-    .then(function () {
-      return ghGetFile('sw.js').then(function (file) {
-        var updated = bumpServiceWorkerCache(file.content);
-        return ghPutFile('sw.js', updated, file.sha, 'Invalide le cache du service worker suite a la mise a jour du Grimoire et des personnages via l\'outil admin');
-      });
-    })
-    .then(function () {
-      showToast('Publie sur GitHub. La prod se mettra a jour dans la minute.');
-    })
-    .catch(function (err) {
-      showToast(err.message || 'Echec de la publication', true);
-    })
-    .finally(function () {
-      btn.textContent = originalLabel;
-      btn.disabled = false;
-    });
-}
-
-document.getElementById('btnPublishGithub').addEventListener('click', function () {
-  if (!getGhToken()) {
-    showToast('Enregistre d\'abord un token GitHub', true);
-    updateTokenStatus();
-    document.getElementById('tokenModalBackdrop').classList.add('open');
-    return;
-  }
-  if (!confirm('Ceci va committer directement le Grimoire et les Personnages sur la branche "' + GH_BRANCH + '" et mettre a jour l\'application en production (GitHub Pages). Continuer ?')) return;
-  publishToGithub();
-});
 
 state = loadState();
 render();

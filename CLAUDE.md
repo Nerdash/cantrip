@@ -410,42 +410,39 @@ https://benwatz.github.io/cantrip/cantrip-admin.html. Renommée depuis `cantrip-
 indépendante de `jdr_character_tracker_state`).
 
 Barre du haut en 2 zones (`.topbar`, flex simple `justify-content:space-between` — pas de
-CSS Grid, pas de zone centrée ; une version précédente centrait Personnage/Grimoire dans une
-3e zone médiane, abandonnée en juillet 2026 au profit du regroupement décrit ci-dessous) :
+CSS Grid, pas de zone centrée) :
 - **Gauche** (`.topbar-left`) : titre + deux boutons de personnage
   (`#btnCharCalix`/`#btnCharDeneor`, `ui.activeChar`) à la place d'un ancien menu déroulant.
 - **Droite** (`.topbar-right`), dans l'ordre : deux boutons de mode (`ui.mode`,
   `'personnage'` | `'grimoire'`) — **"Personnage"** puis **"Grimoire"** — qui affichent l'un ou
-  l'autre panneau (`#personPanel` / `#phone`) sans jamais montrer les deux à la fois ; puis un
-  bouton roue crantée (`#btnGearMenu`, icône SVG) ouvrant un sous-menu (`#gearDropdown`, fermé au
-  clic extérieur ou sur son unique item) contenant "Token GitHub" ; puis le bouton **"Publier"**
-  (renommé depuis "Publier sur GitHub"). Le panneau "Personnage" reproduit tout ce qui est
+  l'autre panneau (`#personPanel` / `#phone`) sans jamais montrer les deux à la fois ; puis
+  **"Charger"** / **"Sauvegarder"** (`#btnDriveLoad`/`#btnDriveSave`, branchés dans `render()` donc
+  disponibles quel que soit le mode affiché). Le panneau "Personnage" reproduit tout ce qui est
   éditable dans "Paramétrer le Personnage" en jeu (PV, Combat, Attaques, Emplacements de sorts,
   Ressources de classe, Caractéristiques, Jets de sauvegarde, Compétences, Sorts préparés pour
   Deneor, Or) ; le panneau "Grimoire" reproduit le rendu du Grimoire de l'app (thème, filtres,
-  onglets de niveau) pour éditer les sorts. Édite le profil **par défaut** codé en dur
-  (`calixDefaultProfile()`/`deneorDefaultProfile()` dans `index.html`), pas la sauvegarde
-  localStorage d'un joueur en cours de partie.
+  onglets de niveau) pour éditer les sorts.
 
-Pas d'import/export de fichier JSON ni de "voir le code JS" dans cet outil (retirés en juillet
-2026 pour simplifier — l'unique flux de publication passe par GitHub) : seul le bouton "Publier"
-fait remonter les modifications, en committant **à la fois** le Grimoire
-(`SPELLBOOK`/`DENEOR_SPELLBOOK`) et les deux personnages (`calixDefaultProfile`/
-`deneorDefaultProfile`) dans `index.html`, quel que soit le mode affiché à l'écran au moment du
-clic. Commite directement sur `master` via l'API GitHub Contents. Nécessite un token GitHub (item
-"Token GitHub" du sous-menu roue crantée — PAT fine-grained scope repo `benwatz/cantrip`,
-permission `Contents: Read and write` uniquement) stocké dans le `localStorage` **du navigateur
-utilisé**, jamais transmis ailleurs qu'à `api.github.com`. Comme le dépôt est public et l'outil
-accessible sans authentification, ce choix expose une page avec un flux d'écriture sur `master` à
-qui la trouverait et disposerait de son propre token — risque jugé acceptable (pas d'accès en
-écriture sans token valide, chaque navigateur a le sien). Le remplacement des blocs
-`var SPELLBOOK = {...}` / `var DENEOR_SPELLBOOK = {...}` et des objets littéraux passés à
-`sanitizeProfile({...})` dans `calixDefaultProfile()`/`deneorDefaultProfile()` se fait par
-comptage d'accolades hors chaînes (fonctions `replaceVarBlock`/`replaceProfileBlock`, gèrent
-l'échappement dans les chaînes simples/doubles) plutôt que par regex naïve, pour ne pas dépendre
-d'un format figé. Committe aussi une deuxième fois `sw.js` en incrémentant `CACHE_NAME` (voir
-section Service Worker), pour respecter la convention déjà en place. Token à créer une fois par
-navigateur/machine (pas de synchronisation entre le PC fixe et le portable).
+**Synchronisation Google Drive (`bdd.json`)** — "Charger" (`driveLoadPersonnage()`) / "Sauvegarder"
+(`driveSavePersonnage()`) sont les **mêmes fonctions que dans `index.html`, dupliquées** (mêmes
+constantes `GOOGLE_CLIENT_ID`/`DRIVE_SCOPE`/`DRIVE_META_KEY`, même fichier `bdd.json` sur Drive).
+"Sauvegarder" écrit dans `bdd.json` le personnage actif (`ui.activeChar`) : à la fois son profil
+(`deriveFullProfile()`, un profil "frais" — PV au max, rien d'utilisé, tel qu'édité dans le
+panneau Personnage) **et** son Grimoire (tel qu'édité dans le panneau Grimoire) — ça écrase la
+progression sauvegardée par un joueur en jeu. "Charger" fait l'inverse : récupère dans les deux
+panneaux ce qu'un joueur a sauvegardé en jeu (page "Charger un personnage" de l'app). Une
+confirmation (`confirm()`) est demandée avant "Sauvegarder" vu le caractère destructif.
+
+Ancien flux retiré (juillet 2026) : l'outil publiait auparavant directement sur GitHub (bouton
+"Publier", token GitHub PAT stocké en `localStorage`, commit direct sur `master` via l'API GitHub
+Contents) pour réécrire les blocs `SPELLBOOK`/`DENEOR_SPELLBOOK` et
+`calixDefaultProfile()`/`deneorDefaultProfile()` codés en dur dans `index.html` (le contenu par
+défaut des nouvelles installations/réinitialisations). Ce flux a été retiré au profit de la seule
+synchronisation Drive ci-dessus, qui couvre le besoin réel (mettre à jour le personnage utilisé en
+jeu) sans passer par un commit Git. **Conséquence** : les valeurs par défaut codées en dur
+(`calixDefaultProfile`/`deneorDefaultProfile`/`SPELLBOOK`/`DENEOR_SPELLBOOK` dans `index.html`) ne
+sont plus modifiables depuis l'outil admin — seule une édition manuelle de `index.html` (ou la
+resynchro Drive au premier lancement) les fait évoluer désormais.
 
 Le thème visuel (`data-theme`, voir section Thèmes plus haut) est posé sur `document.documentElement`
 (pas sur `<body>`) pour matcher les sélecteurs CSS `:root[data-theme="deneor"]` — bug corrigé
