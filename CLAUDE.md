@@ -71,7 +71,7 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `transform:rotate()` direct sur la boîte elle-même : le bloc PV est un rectangle large et non
    carré, une rotation physique fait sortir le liseret du cadre) ; et si le joueur retire des PV
    (`data-action="damage"`) pendant que la concentration est active, un toast violet ("Vous êtes
-   concentré et venez de subir des dégâts, pensez au jet de sauvegarde !") glisse depuis le haut de
+   concentré(e) et venez de subir des dégâts, pensez au jet de sauvegarde !") glisse depuis le haut de
    l'écran (recouvrement léger du bloc PV accepté), reste 10s puis repart, fermable via une croix,
    avec un cooldown de 30s entre deux déclenchements (`maybeShowConcentrationToast()` /
    `ui.concentrationToast`, juillet 2026).

@@ -833,7 +833,7 @@ function render() {
   var scroll = document.getElementById('spellScroll');
   var section = ui.activeLevel === null ? null : sectionByLevel(ui.activeLevel);
   if (!section) {
-    scroll.innerHTML = '<div class="empty-hint">Aucun niveau. Utilise "Gerer les niveaux" pour en creer un.</div>';
+    scroll.innerHTML = '<div class="empty-hint">Aucun niveau. Utilisez "Gerer les niveaux" pour en creer un.</div>';
   } else {
     var visibleSpells = section.spells.filter(spellMatchesFilters);
     var rowsHtml = visibleSpells.map(function (spell) {
@@ -857,7 +857,7 @@ function render() {
 
     scroll.innerHTML = '<div class="section-block">' +
       '<div class="section-title"><span>' + escapeHtml(section.title) + '</span><span class="del-section" id="delSectionBtn">supprimer ce niveau</span></div>' +
-      '<div class="section-cards">' + (rowsHtml || '<div class="empty-hint">Aucun sort. Utilise le bouton + pour en ajouter.</div>') + '</div>' +
+      '<div class="section-cards">' + (rowsHtml || '<div class="empty-hint">Aucun sort. Utilisez le bouton + pour en ajouter.</div>') + '</div>' +
     '</div>';
 
     scroll.querySelectorAll('.spell-row').forEach(function (el) {
@@ -1236,7 +1236,7 @@ function bindPersonnageEvents() {
 // ---- spell modal ----
 function openSpellModal(index) {
   var section = sectionByLevel(ui.activeLevel);
-  if (!section) { showToast('Cree d\'abord un niveau', true); return; }
+  if (!section) { showToast('Creez d\'abord un niveau', true); return; }
   var form = document.getElementById('spellForm');
   form.reset();
   document.getElementById('sp_index').value = (index === undefined || index === null) ? '' : index;
@@ -1371,7 +1371,7 @@ function deleteCurrentSection() {
 
 // ---- reset ----
 function resetGrimoire() {
-  if (!confirm('Reinitialiser tes modifications de Grimoire et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface tes ajouts non exportes.')) return;
+  if (!confirm('Reinitialiser vos modifications de Grimoire et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface vos ajouts non exportes.')) return;
   var fresh = cloneSeed();
   state.calix = fresh.calix;
   state.deneor = fresh.deneor;
@@ -1381,7 +1381,7 @@ function resetGrimoire() {
   showToast('Grimoire reinitialise');
 }
 function resetPersonnage() {
-  if (!confirm('Reinitialiser tes modifications de Personnage (les deux) et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface tes ajouts non exportes.')) return;
+  if (!confirm('Reinitialiser vos modifications de Personnage (les deux) et repartir des donnees actuellement en ligne dans Cantrip ? Cette action efface vos ajouts non exportes.')) return;
   state.profiles = cloneSeedProfiles();
   saveState();
   ui.levelError = '';
@@ -1397,8 +1397,8 @@ function renderSidePanel() {
   if (ui.mode === 'grimoire') {
     title.textContent = 'Comment ça marche (Grimoire)';
     body.innerHTML =
-      '<p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Clique sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>' +
-      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur. Utilise "Charger"/' +
+      '<p>Ce panneau reproduit exactement le rendu du Grimoire dans Cantrip (theme, filtres, onglets de niveau). Cliquez sur un sort pour le modifier, ou sur le bouton + pour en ajouter un au niveau affiche.</p>' +
+      '<p>Vos modifications sont sauvegardees automatiquement dans ce navigateur. Utilisez "Charger"/' +
       '"Sauvegarder" en haut a droite pour synchroniser ce grimoire (avec le profil du personnage) ' +
       'via <code>bdd.json</code> sur Google Drive, la source que l\'app charge/sauvegarde en jeu.</p>';
     actions.innerHTML =
@@ -1418,7 +1418,7 @@ function renderSidePanel() {
       'sauvegardee par un joueur</b> pour ce personnage avec un profil frais (PV au max, rien ' +
       'd\'utilise). "Charger" fait l\'inverse : recupere dans ce formulaire et dans le panneau Grimoire ' +
       'ce qu\'un joueur a sauvegarde en jeu.</p>' +
-      '<p>Tes modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
+      '<p>Vos modifications sont sauvegardees automatiquement dans ce navigateur.</p>';
     actions.innerHTML =
       '<button class="btn" id="btnResetMode">Reinitialiser les Personnages</button>';
     document.getElementById('btnResetMode').addEventListener('click', resetPersonnage);
@@ -1595,7 +1595,7 @@ function driveSaveBdd(mutateFn) {
 
 function driveLoadPersonnage() {
   var charId = ui.activeChar;
-  if (!confirm('Ceci remplace dans cet outil admin le profil et le Grimoire de "' + CHARACTER_NAMES[charId] + '" par ce qui est actuellement sauvegarde dans bdd.json sur Drive. Tes modifications non sauvegardees ici seront perdues. Continuer ?')) return;
+  if (!confirm('Ceci remplace dans cet outil admin le profil et le Grimoire de "' + CHARACTER_NAMES[charId] + '" par ce qui est actuellement sauvegarde dans bdd.json sur Drive. Vos modifications non sauvegardees ici seront perdues. Continuer ?')) return;
   showToast('Chargement depuis Drive...');
   driveLoadBdd().then(function (bdd) {
     var entry = bdd && bdd[charId];
