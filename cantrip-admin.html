@@ -1595,6 +1595,7 @@ function driveSaveBdd(mutateFn) {
 
 function driveLoadPersonnage() {
   var charId = ui.activeChar;
+  if (!confirm('Ceci remplace dans cet outil admin le profil et le Grimoire de "' + CHARACTER_NAMES[charId] + '" par ce qui est actuellement sauvegarde dans bdd.json sur Drive. Tes modifications non sauvegardees ici seront perdues. Continuer ?')) return;
   showToast('Chargement depuis Drive...');
   driveLoadBdd().then(function (bdd) {
     var entry = bdd && bdd[charId];

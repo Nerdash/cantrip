@@ -496,7 +496,7 @@
   function defaultCharacters() {
     return {
       calix: makeCharacter('calix', 'Calix Noctavel', 'Barde du Collège du Savoir', 7, 'characters/calix.jpg', 'calix', calixDefaultProfile()),
-      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous Serment des Anciens', null, 'characters/deneor.png', 'deneor', deneorDefaultProfile())
+      deneor: makeCharacter('deneor', 'Deneor Sentariel', 'Paladin sous Serment des Anciens', 7, 'characters/deneor.png', 'deneor', deneorDefaultProfile())
     };
   }
 
@@ -730,7 +730,8 @@
     driveBusy: false, // true pendant un chargement/sauvegarde Google Drive en cours
     driveError: null, // dernier message d'erreur Drive à afficher sur "Charger un personnage"
     driveToast: null, // null | { message: string, leaving: bool } — confirmation de succès Charger/Sauvegarder
-    driveToastEnterPending: false // true juste après déclenchement ; consommé une fois par render()
+    driveToastEnterPending: false, // true juste après déclenchement ; consommé une fois par render()
+    driveConfirm: null // { action: 'load'|'save', charId? } quand la confirmation Charger/Sauvegarder Drive est ouverte
   };
 
   function profile() { return state.profiles[state.activeProfileIndex]; }
@@ -1035,6 +1036,9 @@
     }
     if (ui.goldModalOpen) {
       app.insertAdjacentHTML('beforeend', renderGoldModal());
+    }
+    if (ui.driveConfirm) {
+      app.insertAdjacentHTML('beforeend', renderDriveConfirmModal());
     }
     if (ui.concentrationToast) {
       app.insertAdjacentHTML('beforeend', renderConcentrationToast());
@@ -1461,7 +1465,7 @@
     var menuItems = [
       { view: 'settings-character', label: 'Paramétrer le Personnage' },
       { view: 'settings-grimoire', label: 'Paramétrer le Grimoire' },
-      { view: 'settings-load-character', label: 'Charger un personnage' }
+      { view: 'settings-load-character', label: 'Gestion des personnages' }
     ];
     var itemsHtml = menuItems.map(function (item) {
       return '<div data-action="nav" data-view="' + item.view + '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.2);border-radius:12px;cursor:pointer;color:var(--text-main)">' +
@@ -1809,6 +1813,27 @@
         '<div style="display:flex;gap:10px;margin-top:4px">' +
           '<div data-action="cancel-disable-level" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(var(--border-tint),0.34);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
           '<div data-action="confirm-disable-level" style="flex:1;height:44px;border-radius:6px;background:#ef4444;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">Désactiver</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderDriveConfirmModal() {
+    var isLoad = ui.driveConfirm.action === 'load';
+    var charId = isLoad ? ui.driveConfirm.charId : state.activeCharacterId;
+    var charName = state.characters[charId].name;
+    var title = isLoad ? 'Charger depuis Drive' : 'Sauvegarder sur Drive';
+    var body = isLoad
+      ? ('Ceci remplace le personnage chargé sur cet appareil par la sauvegarde de ' + escapeHtml(charName) + ' sur Google Drive. Toute progression non sauvegardée ici sera perdue. Continuer ?')
+      : ('Ceci écrase la sauvegarde de ' + escapeHtml(charName) + ' sur Google Drive avec la progression actuelle sur cet appareil. Continuer ?');
+    var confirmLabel = isLoad ? 'Charger' : 'Sauvegarder';
+    return '<div id="driveConfirmOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;box-sizing:border-box">' +
+      '<div style="width:100%;max-width:300px;background:var(--bg-card);border:1px solid rgba(var(--border-tint),0.3);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">' +
+        '<div style="font-size:17px;font-weight:700;color:var(--text-gold)" class="font-cinzel">' + escapeHtml(title) + '</div>' +
+        '<div style="font-size:13px;color:var(--text-desc);line-height:1.4">' + body + '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:4px">' +
+          '<div data-action="cancel-drive-confirm" style="flex:1;height:44px;border-radius:6px;background:transparent;border:1px solid rgba(var(--border-tint),0.34);color:var(--text-label);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center">Annuler</div>' +
+          '<div data-action="confirm-drive-action" style="flex:1;height:44px;border-radius:6px;background:var(--border-strong);border:1px solid rgba(var(--border-tint),0.34);color:var(--ink-bright);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center" class="font-cinzel">' + confirmLabel + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -2501,56 +2526,26 @@
       case 'drive-load-character': {
         if (ui.driveBusy) break;
         var driveLoadId = e.currentTarget.getAttribute('data-id');
-        ui.driveBusy = true; ui.driveError = null; render();
-        driveLoadBdd().then(function (bdd) {
-          var entry = bdd && bdd[driveLoadId];
-          if (!entry || typeof entry !== 'object') throw new Error('Aucune sauvegarde pour ce personnage dans bdd.json sur Drive.');
-          // Compat avec bdd.json écrit avant l'ajout du grimoire : entry était alors le profil
-          // directement, sans clé "profile"/"grimoire".
-          var loadedProfile = (entry.profile && typeof entry.profile === 'object') ? entry.profile : entry;
-          var loadedGrimoire = (entry.grimoire && Array.isArray(entry.grimoire.sections)) ? entry.grimoire : null;
-          sanitizeProfile(loadedProfile);
-          state.characters[driveLoadId].savedProfile = loadedProfile;
-          state.characters[driveLoadId].grimoire = loadedGrimoire;
-          state.profiles[state.activeProfileIndex] = cloneDeep(loadedProfile);
-          state.activeCharacterId = driveLoadId;
-          applyTheme();
-          saveState();
-          ui.driveBusy = false;
-          ui.view = 'tracker';
-          showDriveToast('Le personnage a été chargé avec succès.');
-          render();
-        }).catch(function (err) {
-          ui.driveBusy = false;
-          ui.driveError = err.message || 'Échec du chargement depuis Drive';
-          render();
-        });
+        ui.driveConfirm = { action: 'load', charId: driveLoadId };
+        render();
         break;
       }
       case 'drive-save-character': {
         if (ui.driveBusy) break;
-        ui.driveBusy = true; ui.driveError = null; render();
-        var driveSaveId = state.activeCharacterId;
-        var driveSaveProfile = cloneDeep(profile());
-        // Le grimoire n'est pas éditable depuis l'app : on réécrit uniquement le profil, en
-        // conservant tel quel le grimoire déjà présent dans bdd.json (posé par l'admin) plutôt
-        // que de l'écraser avec rien.
-        driveSaveBdd(function (bdd) {
-          var existingEntry = (bdd[driveSaveId] && typeof bdd[driveSaveId] === 'object') ? bdd[driveSaveId] : {};
-          var existingGrimoire = (existingEntry.grimoire && Array.isArray(existingEntry.grimoire.sections)) ? existingEntry.grimoire : (state.characters[driveSaveId].grimoire || null);
-          bdd[driveSaveId] = { profile: driveSaveProfile, grimoire: existingGrimoire };
-          return bdd;
-        }).then(function () {
-          state.characters[driveSaveId].savedProfile = cloneDeep(driveSaveProfile);
-          saveState();
-          ui.driveBusy = false;
-          showDriveToast('Le personnage a été sauvegardé avec succès.');
-          render();
-        }).catch(function (err) {
-          ui.driveBusy = false;
-          ui.driveError = err.message || 'Échec de la sauvegarde sur Drive';
-          render();
-        });
+        ui.driveConfirm = { action: 'save' };
+        render();
+        break;
+      }
+      case 'cancel-drive-confirm':
+        ui.driveConfirm = null;
+        render();
+        break;
+      case 'confirm-drive-action': {
+        var driveConfirm = ui.driveConfirm;
+        ui.driveConfirm = null;
+        if (!driveConfirm) break;
+        if (driveConfirm.action === 'load') performDriveLoad(driveConfirm.charId);
+        else performDriveSave();
         break;
       }
 
@@ -2639,6 +2634,59 @@
   function dismissConcentrationToast() {
     clearTimeout(concentrationToastHideTimer);
     startLeavingConcentrationToast();
+  }
+
+  // ---- actions Charger/Sauvegarder (Google Drive), déclenchées après confirmation ----
+  function performDriveLoad(charId) {
+    ui.driveBusy = true; ui.driveError = null; render();
+    driveLoadBdd().then(function (bdd) {
+      var entry = bdd && bdd[charId];
+      if (!entry || typeof entry !== 'object') throw new Error('Aucune sauvegarde pour ce personnage dans bdd.json sur Drive.');
+      // Compat avec bdd.json écrit avant l'ajout du grimoire : entry était alors le profil
+      // directement, sans clé "profile"/"grimoire".
+      var loadedProfile = (entry.profile && typeof entry.profile === 'object') ? entry.profile : entry;
+      var loadedGrimoire = (entry.grimoire && Array.isArray(entry.grimoire.sections)) ? entry.grimoire : null;
+      sanitizeProfile(loadedProfile);
+      state.characters[charId].savedProfile = loadedProfile;
+      state.characters[charId].grimoire = loadedGrimoire;
+      state.profiles[state.activeProfileIndex] = cloneDeep(loadedProfile);
+      state.activeCharacterId = charId;
+      applyTheme();
+      saveState();
+      ui.driveBusy = false;
+      ui.view = 'tracker';
+      showDriveToast('Le personnage a été chargé avec succès.');
+      render();
+    }).catch(function (err) {
+      ui.driveBusy = false;
+      ui.driveError = err.message || 'Échec du chargement depuis Drive';
+      render();
+    });
+  }
+
+  function performDriveSave() {
+    ui.driveBusy = true; ui.driveError = null; render();
+    var charId = state.activeCharacterId;
+    var driveSaveProfile = cloneDeep(profile());
+    // Le grimoire n'est pas éditable depuis l'app : on réécrit uniquement le profil, en
+    // conservant tel quel le grimoire déjà présent dans bdd.json (posé par l'admin) plutôt
+    // que de l'écraser avec rien.
+    driveSaveBdd(function (bdd) {
+      var existingEntry = (bdd[charId] && typeof bdd[charId] === 'object') ? bdd[charId] : {};
+      var existingGrimoire = (existingEntry.grimoire && Array.isArray(existingEntry.grimoire.sections)) ? existingEntry.grimoire : (state.characters[charId].grimoire || null);
+      bdd[charId] = { profile: driveSaveProfile, grimoire: existingGrimoire };
+      return bdd;
+    }).then(function () {
+      state.characters[charId].savedProfile = cloneDeep(driveSaveProfile);
+      saveState();
+      ui.driveBusy = false;
+      showDriveToast('Le personnage a été sauvegardé avec succès.');
+      render();
+    }).catch(function (err) {
+      ui.driveBusy = false;
+      ui.driveError = err.message || 'Échec de la sauvegarde sur Drive';
+      render();
+    });
   }
 
   // ---- toast de confirmation Charger/Sauvegarder (Google Drive) ----

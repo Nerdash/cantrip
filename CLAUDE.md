@@ -191,10 +191,11 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
    `settings-load-character`) et affiche en haut un bouton retour (`renderSettingsHeader()`) qui
    repositionne `ui.view = 'settings'` (retour au menu, pas au Tracker). Dans la barre de
    navigation basse, l'onglet Paramètres reste en surbrillance tant que `ui.view` commence par
-   `"settings"` (menu ou n'importe quelle sous-page). Le troisième bouton du menu, "Charger un
-   personnage", renvoie directement à `renderSettingsLoadCharacter()` (voir section Personnages
-   ci-dessous) — il n'y a plus de niveau intermédiaire "Paramétrer l'application" depuis juillet
-   2026 (l'écran ne servait plus qu'à ça après le retrait de l'export/import JSON, voir plus bas).
+   `"settings"` (menu ou n'importe quelle sous-page). Le troisième bouton du menu, "Gestion des
+   personnages" (libellé ; la vue interne garde le nom `settings-load-character`), renvoie
+   directement à `renderSettingsLoadCharacter()` (voir section Personnages ci-dessous) — il n'y a
+   plus de niveau intermédiaire "Paramétrer l'application" depuis juillet 2026 (l'écran ne servait
+   plus qu'à ça après le retrait de l'export/import JSON, voir plus bas).
    - **Paramétrer le Personnage** (`renderSettingsCharacter()`) — nom du personnage,
      CA/Initiative/Déplacement (`data-action="combat-input"`, Initiative signée via
      `formatSigned()`, CA/Déplacement non signés), liste d'attaques (voir ci-dessous), config des
@@ -264,7 +265,7 @@ réécriture complète de `innerHTML` à chaque changement (pas de diffing, pas 
      emplacement UI "à venir" pour un futur sélecteur connus/préparés côté Calix — non développé).
      Pour Deneor, affiche un résumé du système de préparation et un bouton "Préparer mes sorts"
      vers `renderGrimoirePrepare()` (voir section Grimoire plus haut).
-   - **Charger un personnage** (`renderSettingsLoadCharacter()`, troisième bouton du menu
+   - **Gestion des personnages** (`renderSettingsLoadCharacter()`, troisième bouton du menu
      Paramètres) — voir section Personnages ci-dessous. Pas de toggle de thème ici : le thème suit
      le personnage chargé, voir section Thèmes (Calix / Deneor) plus bas.
 
@@ -283,9 +284,11 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
 `savedProfile`. Les deux ne sont jamais le même objet en mémoire (clonage systématique via
 `cloneDeep()`, un round-trip JSON) pour permettre un aller-retour explicite :
 
-- **Charger un personnage** (`renderSettingsLoadCharacter()`, `view: 'settings-load-character'`,
-  troisième bouton du menu Paramètres) — carrousel plein écran (un personnage affiché à la
-  fois, portrait + nom + sous-titre + niveau si défini) avec navigation par flèches
+- **Gestion des personnages** (`renderSettingsLoadCharacter()`, `view: 'settings-load-character'`,
+  troisième bouton du menu Paramètres — le header de la page garde le titre "Charger un
+  personnage") — carrousel plein écran (un personnage affiché à la fois, portrait + nom +
+  sous-titre + niveau si défini, les deux personnages ont un niveau depuis juillet 2026) avec
+  navigation par flèches
   (`data-action="character-carousel-step"`) ou glissé façon "carte à jouer" sur
   `#characterCarouselSwipe`, implémenté via Pointer Events (souris **et** tactile, pas seulement
   tactile) dans `bindEvents()` : la carte suit le curseur/doigt 1:1 pendant le drag (rotation +
@@ -297,19 +300,26 @@ Le profil réellement affiché/édité dans toute l'app reste `state.profiles[st
   de 360ms. Un badge "Personnage chargé" s'affiche sur la carte si `state.activeCharacterId`
   correspond au personnage affiché.
   Sous la carte, dans cet ordre : le bouton **Charger ce personnage** (`data-action=
-  "load-character"`) — toujours actif : clone `character.savedProfile` dans
-  `state.profiles[state.activeProfileIndex]`, bascule `state.activeCharacterId`, applique le
-  thème du personnage (`applyTheme()`, voir section Thèmes (Calix / Deneor) plus bas), puis
-  renvoie directement sur le Tracker (`ui.view = 'tracker'`) — puis la rangée flèches/pastilles du
-  carrousel. Les flèches gauche/droite (`data-action="character-carousel-step"`) sont
-  volontairement à la même taille que les boutons −/+ du bloc PV du Tracker (80×76px, icône
-  36px, via `iconArrowLeft(size)`) plutôt que la taille généraliste 36×36 des autres boutons de
-  navigation (`navBackButtonHtml()`), pour rester faciles à toucher (juillet 2026).
-  Cet écran ne sert plus qu'à ça depuis juillet 2026 : "Mettre à jour le personnage" et le bloc
-  d'export/import JSON par personnage (`exportCharacterJson()`/`importCharacterJson()`,
-  `ui.characterNotice`/`ui.characterImportError`) ont été retirés — `character.savedProfile` de
-  chaque personnage n'est donc plus modifiable depuis l'app elle-même (seul l'outil admin,
-  voir plus bas, ou une édition directe du JSON dans `index.html` le permettent encore).
+  "drive-load-character"`, toujours actif) puis, uniquement si le personnage affiché est déjà
+  actif (`isActive`), **Sauvegarder ce personnage** (`data-action="drive-save-character"`) — puis
+  la rangée flèches/pastilles du carrousel. Les flèches gauche/droite
+  (`data-action="character-carousel-step"`) sont volontairement à la même taille que les boutons
+  −/+ du bloc PV du Tracker (80×76px, icône 36px, via `iconArrowLeft(size)`) plutôt que la taille
+  généraliste 36×36 des autres boutons de navigation (`navBackButtonHtml()`), pour rester faciles
+  à toucher (juillet 2026).
+  Les deux boutons passent par `bdd.json` sur Google Drive (mêmes fonctions `driveLoadBdd()`/
+  `driveSaveBdd()` que dans `cantrip-admin.html`, voir section Outil admin plus bas) plutôt que par
+  une simple copie locale de `character.savedProfile` — un tap ouvre d'abord une modale de
+  confirmation (`renderDriveConfirmModal()`, état `ui.driveConfirm = { action: 'load'|'save',
+  charId? }`, même gabarit visuel que `renderDisableLevelModal()`) rappelant que l'opération
+  écrase soit la sauvegarde locale sur cet appareil, soit celle sur Drive ; valider déclenche
+  `performDriveLoad()`/`performDriveSave()`, qui posent `ui.driveBusy` (désactive les boutons,
+  affiche "Synchronisation avec Drive…") puis, en cas de succès, mettent à jour
+  `character.savedProfile`, appliquent le thème (`applyTheme()`) et le profil actif, et affichent
+  un toast de confirmation (`showDriveToast()`/`ui.driveToast`) ; en cas d'échec, `ui.driveError`
+  s'affiche sous les boutons. `character.savedProfile` de chaque personnage reste donc modifiable
+  depuis l'app elle-même via cette synchro Drive (contrairement aux valeurs par défaut codées en
+  dur, voir section Outil admin plus bas).
   Le Grimoire affiché dépend de `state.activeCharacterId` (`activeSpellbook()`, voir section
   Grimoire plus haut) : charger Deneor bascule sur `DENEOR_SPELLBOOK` et son système de
   préparation de sorts, indépendant du contenu de Calix.
@@ -431,7 +441,9 @@ constantes `GOOGLE_CLIENT_ID`/`DRIVE_SCOPE`/`DRIVE_META_KEY`, même fichier `bdd
 panneau Personnage) **et** son Grimoire (tel qu'édité dans le panneau Grimoire) — ça écrase la
 progression sauvegardée par un joueur en jeu. "Charger" fait l'inverse : récupère dans les deux
 panneaux ce qu'un joueur a sauvegardé en jeu (page "Charger un personnage" de l'app). Une
-confirmation (`confirm()`) est demandée avant "Sauvegarder" vu le caractère destructif.
+confirmation (`confirm()` natif, cohérent avec le reste de cet outil — désactivation de niveau,
+suppression de sort, réinitialisation...) est demandée avant "Charger" **et** "Sauvegarder" vu le
+caractère destructif des deux sens.
 
 Ancien flux retiré (juillet 2026) : l'outil publiait auparavant directement sur GitHub (bouton
 "Publier", token GitHub PAT stocké en `localStorage`, commit direct sur `master` via l'API GitHub
